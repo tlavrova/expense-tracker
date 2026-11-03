@@ -73,7 +73,7 @@ cd frontend && ng serve                  # UI on http://localhost:4200
 - [x] **3. Functions** — `add_expense()`, `show_all()`, `show_summary()`, `filter_by_category()`; sort by amount or date with `sorted()` + `lambda`
 - [x] **4. OOP** — `Expense` with `__str__`; `ExpenseTracker` holding the list; `RecurringExpense(Expense)` with a frequency; classes live in `models.py`, the menu in `main.py`
 - [x] **5. Errors and exceptions** — bad input never crashes; custom `InvalidAmountError` for zero or negative amounts
-- [ ] **6. Files and modules** — auto save/load `expenses.json` in `storage.py`; `main.py` only wires models, storage and the menu together
+- [x] **6. Files and modules** — auto save/load `expenses.json` in `storage.py`; input helpers in `prompts.py`; `main.py` only has the screens and the menu
 - [ ] **7. Advanced Python** — `@log_action` decorator; generator for a chosen month; `datetime`, `defaultdict`/`Counter` for stats
 - [ ] **8. AI auto-categorization** — `ai_helper.suggest_category(description: str) -> str` with Claude (`claude-haiku-5-5`) via the `anthropic` SDK; only food, transport, housing, entertainment, shopping, health or other (anything else becomes other); accept or override; falls back to manual on errors
 - [ ] **9. REST API** — FastAPI app in `api.py` reusing `ExpenseTracker` and `storage`: list, add, delete, summary, filter, and suggest-category endpoints; CORS for the Angular dev server
@@ -86,7 +86,8 @@ cd frontend && ng serve                  # UI on http://localhost:4200
 ```
 expense-tracker/
 ├── backend/
-│   ├── main.py          # CLI menu + user interaction
+│   ├── main.py          # CLI screens + menu loop
+│   ├── prompts.py       # ask_text, ask_amount, ask_date, ask_frequency
 │   ├── models.py        # Expense, RecurringExpense, ExpenseTracker
 │   ├── storage.py       # load/save JSON
 │   ├── ai_helper.py     # AI category suggestion

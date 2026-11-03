@@ -67,8 +67,8 @@ class RecurringExpense(Expense):
 class ExpenseTracker:
     """Holds the list of expenses and answers questions about them."""
 
-    def __init__(self) -> None:
-        self.expenses: list[Expense] = []
+    def __init__(self, expenses: list[Expense] | None = None) -> None:
+        self.expenses: list[Expense] = list(expenses or [])
 
     def __len__(self) -> int:
         return len(self.expenses)

@@ -1,65 +1,19 @@
-"""Command-line menu for the expense tracker. All user input and printing lives here."""
+"""Command-line menu for the expense tracker: screens and the menu loop.
+
+Data rules live in models.py, the JSON file in storage.py, and input helpers in prompts.py.
+"""
 
 from __future__ import annotations
 
-from datetime import date
+import sys
 
-from models import (
-    FREQUENCIES,
-    Expense,
-    ExpenseTracker,
-    InvalidAmountError,
-    RecurringExpense,
-    validate_amount,
-    validate_date,
-)
+import storage
+from models import Expense, ExpenseTracker, RecurringExpense
+from prompts import ask_amount, ask_date, ask_frequency, ask_text
 
 
-def ask_text(prompt: str) -> str:
-    """Ask until the answer is not empty."""
-    while True:
-        answer = input(prompt).strip()
-        if answer:
-            return answer
-        print("⚠️  This can't be empty.")
-
-
-def ask_amount() -> float:
-    """Ask until the answer is a number greater than zero."""
-    while True:
-        answer = input("Amount: ").strip().replace(",", ".")
-        try:
-            return validate_amount(float(answer))
-        except InvalidAmountError:
-            print("⚠️  The amount must be greater than zero.")
-        except ValueError:
-            print("⚠️  Please enter a number, for example 12.50.")
-
-
-def ask_date() -> str:
-    """Ask until the answer is a real YYYY-MM-DD date; empty means today."""
-    while True:
-        answer = input("Date (YYYY-MM-DD, empty for today): ").strip()
-        if not answer:
-            return date.today().isoformat()
-        try:
-            return validate_date(answer)
-        except ValueError:
-            print("⚠️  Please enter a real date as YYYY-MM-DD, for example 2026-11-03.")
-
-
-def ask_frequency() -> str:
-    """Ask until the answer is a known frequency or empty (not recurring)."""
-    options = "/".join(FREQUENCIES)
-    while True:
-        answer = input(f"Repeats ({options}, empty if not): ").strip().lower()
-        if not answer or answer in FREQUENCIES:
-            return answer
-        print(f"⚠️  Please choose {options}, or leave it empty.")
-
-
-def add_expense(tracker: ExpenseTracker) -> Expense:
-    """Ask for an expense, add it to the tracker and return it."""
+def add_expense(tracker: ExpenseTracker) -> None:
+    """Ask for an expense, add it to the tracker and save."""
     description = ask_text("Description: ")
     amount = ask_amount()
     category = ask_text("Category: ").lower()
@@ -72,8 +26,12 @@ def add_expense(tracker: ExpenseTracker) -> Expense:
     else:
         expense = Expense(amount, category, description, when)
     tracker.add(expense)
+    try:
+        storage.save(tracker)
+    except OSError as error:
+        print(f"⚠️  Added, but couldn't save to {storage.DEFAULT_PATH}: {error}")
+        return
     print("✅ Saved.")
-    return expense
 
 
 def print_expenses(expenses: list[Expense]) -> None:
@@ -120,7 +78,14 @@ def show_filtered(tracker: ExpenseTracker) -> None:
 
 
 def main() -> None:
-    tracker = ExpenseTracker()
+    try:
+        tracker = storage.load()
+    except storage.StorageError as error:
+        # Stop instead of starting empty: saving would overwrite the user's data.
+        print(f"❌ {error}")
+        print("Fix or move the file, then start again.")
+        sys.exit(1)
+
     actions = {
         "1": add_expense,
         "2": show_all,
@@ -128,6 +93,8 @@ def main() -> None:
         "4": show_filtered,
     }
     print("=== Expense Tracker ===")
+    if tracker:
+        print(f"Loaded {len(tracker)} expense(s).")
     try:
         while True:
             print()
