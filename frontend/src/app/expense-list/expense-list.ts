@@ -6,7 +6,7 @@ import { ExpenseService } from '../expense.service';
 @Component({
   imports: [DatePipe, DecimalPipe],
   selector: 'app-expense-list',
-  styleUrl: './expense-list.scss',
+  styleUrl: './expense-list.css',
   templateUrl: './expense-list.html',
 })
 export class ExpenseList {

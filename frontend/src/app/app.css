@@ -20,24 +20,24 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.25rem;
+}
 
-  a {
-    padding: 0.4rem 0.75rem;
-    border-radius: 6px;
-    color: var(--muted);
-    text-decoration: none;
+.nav a {
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  color: var(--muted);
+  text-decoration: none;
+}
 
-    &:hover {
-      background: var(--hover);
-      color: var(--text);
-    }
+.nav a:hover {
+  background: var(--hover);
+  color: var(--text);
+}
 
-    &.active {
-      background: var(--accent-soft);
-      color: var(--accent);
-      font-weight: 600;
-    }
-  }
+.nav a.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
 }
 
 .content {
