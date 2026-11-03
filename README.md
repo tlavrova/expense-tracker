@@ -70,7 +70,7 @@ cd frontend && ng serve                  # UI on http://localhost:4200
 
 - [x] **1. Basics** — menu loop (add, show, quit); amount, category and description in a list; total spent
 - [x] **2. Data structures** — each expense a dict (amount, category, description, date); totals per category; unique categories as a set
-- [ ] **3. Functions** — `add_expense()`, `show_all()`, `show_summary()`, `filter_by_category()`; sort by amount or date with `sorted()` + `lambda`
+- [x] **3. Functions** — `add_expense()`, `show_all()`, `show_summary()`, `filter_by_category()`; sort by amount or date with `sorted()` + `lambda`
 - [ ] **4. OOP** — `Expense` with `__str__`; `ExpenseTracker` holding the list; `RecurringExpense(Expense)` with a frequency
 - [ ] **5. Errors and exceptions** — bad input never crashes; custom `InvalidAmountError` for zero or negative amounts
 - [ ] **6. Files and modules** — auto save/load `expenses.json`; split into `models.py`, `storage.py`, `main.py`
