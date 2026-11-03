@@ -23,11 +23,16 @@ class StorageError(Exception):
 
 def expense_to_dict(expense: Expense) -> dict[str, Any]:
     """Plain dict for JSON. RecurringExpense also has a "frequency" key."""
-    return asdict(expense)
+    data = asdict(expense)
+    data["date"] = expense.date.isoformat()  # JSON has no date type, so store "YYYY-MM-DD"
+    return data
 
 
 def expense_from_dict(data: dict[str, Any]) -> Expense:
-    """Build an Expense, or a RecurringExpense when "frequency" is present. Validates the values."""
+    """Build an Expense, or a RecurringExpense when "frequency" is present.
+
+    The model validates the values and turns the "YYYY-MM-DD" string back into a date.
+    """
     if "frequency" in data:
         return RecurringExpense(**data)
     return Expense(**data)

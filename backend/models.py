@@ -6,8 +6,10 @@ Nothing here reads input or prints, so the CLI (main.py), tests and the API can 
 from __future__ import annotations
 
 import math
+from collections import Counter, defaultdict
 from dataclasses import dataclass
 from datetime import date as Date
+from typing import Iterator
 
 FREQUENCIES = ("weekly", "monthly", "yearly")
 
@@ -23,13 +25,12 @@ def validate_amount(amount: float) -> float:
     return amount
 
 
-def validate_date(value: str) -> str:
-    """Return the date if it is a real YYYY-MM-DD date; otherwise raise ValueError."""
+def parse_date(value: str) -> Date:
+    """Turn "YYYY-MM-DD" into a date; raise ValueError if it isn't a real date."""
     try:
-        Date.fromisoformat(value)
+        return Date.fromisoformat(value)
     except ValueError:
         raise ValueError(f"Date must be a real date as YYYY-MM-DD, got {value!r}.") from None
-    return value
 
 
 @dataclass
@@ -37,11 +38,14 @@ class Expense:
     amount: float
     category: str
     description: str
-    date: str  # "YYYY-MM-DD"
+    date: Date  # a "YYYY-MM-DD" string is accepted and converted
 
     def __post_init__(self) -> None:
         validate_amount(self.amount)
-        validate_date(self.date)
+        if isinstance(self.date, str):
+            self.date = parse_date(self.date)
+        elif not isinstance(self.date, Date):
+            raise TypeError(f"Date must be a date or a YYYY-MM-DD string, got {self.date!r}.")
         if not self.description.strip():
             raise ValueError("Description must not be empty.")
         if not self.category.strip():
@@ -80,10 +84,34 @@ class ExpenseTracker:
         return sum(expense.amount for expense in self.expenses)
 
     def totals_by_category(self) -> dict[str, float]:
-        totals: dict[str, float] = {}
+        totals: defaultdict[str, float] = defaultdict(float)
         for expense in self.expenses:
-            totals[expense.category] = totals.get(expense.category, 0) + expense.amount
-        return totals
+            totals[expense.category] += expense.amount
+        return dict(totals)
+
+    def totals_by_month(self) -> dict[str, float]:
+        """Return "YYYY-MM" -> total amount, oldest month first."""
+        totals: defaultdict[str, float] = defaultdict(float)
+        for expense in self.expenses:
+            totals[expense.date.strftime("%Y-%m")] += expense.amount
+        return dict(sorted(totals.items()))
+
+    def count_by_category(self) -> Counter[str]:
+        """How many expenses each category has; .most_common() sorts them."""
+        return Counter(expense.category for expense in self.expenses)
+
+    def average(self) -> float:
+        """Average amount per expense; 0 when there are none."""
+        return self.total() / len(self) if self.expenses else 0.0
+
+    def largest(self) -> Expense | None:
+        return max(self.expenses, key=lambda expense: expense.amount, default=None)
+
+    def expenses_in_month(self, year: int, month: int) -> Iterator[Expense]:
+        """Yield the expenses of one month, one at a time, without building a new list."""
+        for expense in self.expenses:
+            if expense.date.year == year and expense.date.month == month:
+                yield expense
 
     def categories(self) -> set[str]:
         return {expense.category for expense in self.expenses}
