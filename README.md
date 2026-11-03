@@ -1,13 +1,14 @@
 # Expense Tracker
 
 An app for recording daily expenses, viewing summaries by category and date, and saving data
-between runs. When the category is left empty, AI (Claude) suggests one from the expense
-description.
+between runs. When the category is left empty, AI (Google Gemini, free tier) suggests one from
+the expense description.
 
 A pet project to practise the Complete Python Bootcamp, one stage per course section. The Python
 core starts as a command-line app (stages 1–8), then gets a REST API (FastAPI) and an
 Angular frontend (stages 9–11). The Angular shell (10a) starts with mock data right after
-stage 4, alongside the remaining Python stages.
+stage 4, alongside the remaining Python stages. Finally it gets a login and goes online as a
+website (stages 12–13).
 
 ```
 === Expense Tracker ===
@@ -22,7 +23,8 @@ Category (leave empty for AI suggestion):
 
 ## Install
 
-Backend (Python 3):
+Backend (Python 3.10 or newer recommended; the Python 3.9 that comes with macOS is no longer
+supported):
 
 ```bash
 cd backend
@@ -39,16 +41,22 @@ cd frontend
 npm install
 ```
 
-## API key
+## AI key (Gemini free tier)
 
-The AI suggestion reads the key from the `ANTHROPIC_API_KEY` environment variable; it is never
-stored in the code. Only the backend calls Claude, so the key never reaches the browser.
+The AI suggestion uses the Google Gemini API's free tier. Create a free key in Google AI Studio
+and put it in an environment variable; it is never stored in the code. Only the backend calls
+Gemini, so the key never reaches the browser.
 
 ```bash
-export ANTHROPIC_API_KEY=...
+export GEMINI_API_KEY=...
+export GEMINI_MODEL=...   # optional: which free-tier model to use (the app has a default)
 ```
 
-Without a key, or without internet, the app falls back to picking the category by hand.
+Without a key, without internet, or when the free-tier limit is reached, the app falls back to
+picking the category by hand.
+
+On the free tier, Google may use what is sent (the expense descriptions) to improve its
+products, so don't put anything private in descriptions.
 
 ## Run
 
@@ -82,12 +90,14 @@ cd frontend && npm start                 # UI on http://localhost:4200
 - [x] **5. Errors and exceptions** — bad input never crashes; custom `InvalidAmountError` for zero or negative amounts
 - [x] **6. Files and modules** — auto save/load `expenses.json` in `storage.py`; input helpers in `prompts.py`; `main.py` only has the screens and the menu
 - [x] **7. Advanced Python** — `@log_action` decorator; generator for a chosen month; `datetime`, `defaultdict`/`Counter` for stats
-- [ ] **8. AI auto-categorization** — `ai_helper.suggest_category(description: str) -> str` with Claude (`claude-haiku-5-5`) via the `anthropic` SDK; only food, transport, housing, entertainment, shopping, health or other (anything else becomes other); accept or override; falls back to manual on errors
-- [ ] **8a. SQLite storage** — `storage.py` switches from JSON to the built-in `sqlite3` with `expenses.db`: one row per expense with an `id`, parameterized queries, `GROUP BY` for totals; delete from the menu; one-time import of `expenses.json`
+- [ ] **8. AI auto-categorization** — `ai_helper.suggest_category(description: str) -> str` with the Gemini API free tier via the `google-genai` package; key in `GEMINI_API_KEY`; only food, transport, housing, entertainment, shopping, health or other (anything else becomes other); accept or override; falls back to manual on errors and rate limits
+- [ ] **8a. Database storage** — `storage.py` switches from JSON to a database through SQLModel: SQLite (`expenses.db`) on your Mac, Postgres online, chosen by `DATABASE_URL`; one row per expense with an `id`, `GROUP BY` for totals; delete from the menu; one-time import of `expenses.json`
 - [ ] **9. REST API** — FastAPI app in `api.py` reusing `ExpenseTracker` and `storage`: list, add, delete, summary, filter, and suggest-category endpoints; CORS for the Angular dev server
 - [x] **10a. Angular shell (mock data)** — can start right after stage 4: Angular app in `frontend/` with routing and layout; `Expense` interface; `ExpenseService` returning mock data; list page with total
 - [ ] **10. Angular: list and add** — switch `ExpenseService` to `HttpClient` against the API; add form with validation
 - [ ] **11. Angular: summary, filter and AI** — totals per category, filter by category and month, sort; AI suggestion in the add form (accept or override, manual fallback)
+- [ ] **12. Login** — sign-up and login (hashed passwords, token) in FastAPI; each expense belongs to a user; Angular login page, interceptor and route guard
+- [ ] **13. Deploy** — Angular on GitHub Pages (GitHub Actions), FastAPI on a free host, free hosted Postgres, Gemini key as a host secret; the site works from any device
 
 ## Structure
 
@@ -99,12 +109,12 @@ expense-tracker/
 │   ├── prompts.py       # ask_text, ask_amount, ask_date, ask_month, ask_frequency
 │   ├── decorators.py    # @log_action
 │   ├── models.py        # Expense, RecurringExpense, ExpenseTracker
-│   ├── storage.py       # SQLite storage (JSON until stage 8a)
-│   ├── ai_helper.py     # AI category suggestion
+│   ├── storage.py       # database storage via SQLModel (JSON until stage 8a)
+│   ├── ai_helper.py     # AI category suggestion (Gemini)
 │   ├── api.py           # FastAPI REST API for the frontend
-│   ├── expenses.db      # data (git-ignored; expenses.json before stage 8a)
+│   ├── expenses.db      # local SQLite data (git-ignored; expenses.json before stage 8a)
 │   ├── expenses.log     # action log from @log_action (git-ignored)
-│   └── requirements.txt # anthropic, fastapi, uvicorn
+│   └── requirements.txt # google-genai, fastapi, uvicorn (sqlmodel from stage 8a)
 ├── frontend/            # Angular 22 app
 │   └── src/app/
 │       ├── expense.model.ts    # Expense, NewExpense, Summary types
@@ -120,5 +130,5 @@ expense-tracker/
 
 ## Later
 
-Budget limits with warnings · charts in the Angular UI · an ORM (SQLModel/SQLAlchemy) instead of hand-written SQL · unit tests
-(pytest, Angular tests) · more AI: natural-language input, monthly summary
+Budget limits with warnings · charts in the Angular UI · unit tests (pytest, Angular tests) ·
+more AI: natural-language input, monthly summary
