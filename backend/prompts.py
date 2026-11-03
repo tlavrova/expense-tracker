@@ -63,3 +63,16 @@ def ask_frequency() -> str:
         if not answer or answer in FREQUENCIES:
             return answer
         print(f"⚠️  Please choose {options}, or leave it empty.")
+
+
+def ask_yes_no(prompt: str, default: bool = True) -> bool:
+    """Ask until the answer is yes or no; Enter means the default."""
+    while True:
+        answer = input(prompt).strip().lower()
+        if not answer:
+            return default
+        if answer in ("y", "yes"):
+            return True
+        if answer in ("n", "no"):
+            return False
+        print("⚠️  Please answer y or n.")

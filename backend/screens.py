@@ -9,10 +9,11 @@ from __future__ import annotations
 from datetime import date
 from typing import Iterable
 
+import ai_helper
 import storage
 from decorators import log_action
-from models import Expense, ExpenseTracker, RecurringExpense
-from prompts import ask_amount, ask_date, ask_frequency, ask_month, ask_text
+from models import CATEGORIES, Expense, ExpenseTracker, RecurringExpense
+from prompts import ask_amount, ask_date, ask_frequency, ask_month, ask_text, ask_yes_no
 
 
 @log_action
@@ -20,7 +21,7 @@ def add_expense(tracker: ExpenseTracker) -> None:
     """Ask for an expense, add it to the tracker and save."""
     description = ask_text("Description: ")
     amount = ask_amount()
-    category = ask_text("Category: ").lower()
+    category = choose_category(description)
     when = ask_date()
     frequency = ask_frequency()
 
@@ -36,6 +37,24 @@ def add_expense(tracker: ExpenseTracker) -> None:
         print(f"⚠️  Added, but couldn't save to {storage.DEFAULT_PATH}: {error}")
         return
     print("✅ Saved.")
+
+
+def choose_category(description: str) -> str:
+    """Typed category, or an AI suggestion when left empty; falls back to typing it."""
+    category = input("Category (leave empty for AI suggestion): ").strip().lower()
+    if category:
+        return category
+    print("🤖 Asking Gemini… (Ctrl+C to skip)")
+    try:
+        suggestion = ai_helper.suggest_category(description)
+    except ai_helper.AIUnavailableError as error:
+        print(f"⚠️  No AI suggestion: {error}")
+    except KeyboardInterrupt:
+        print("Skipped.")
+    else:
+        if ask_yes_no(f"🤖 Suggested: {suggestion} — accept? (Y/n): "):
+            return suggestion
+    return ask_text(f"Category ({', '.join(CATEGORIES)}, or your own): ").lower()
 
 
 def print_expenses(expenses: Iterable[Expense]) -> None:
