@@ -5,6 +5,8 @@ venv/
 .env
 backend/expenses.json
 backend/expenses.json.tmp
+backend/expenses.json.imported
+backend/expenses.db
 *.log
 .DS_Store
 

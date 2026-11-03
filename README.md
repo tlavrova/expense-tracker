@@ -76,6 +76,7 @@ cd frontend && ng serve                  # UI on http://localhost:4200
 - [x] **6. Files and modules** — auto save/load `expenses.json` in `storage.py`; input helpers in `prompts.py`; `main.py` only has the screens and the menu
 - [ ] **7. Advanced Python** — `@log_action` decorator; generator for a chosen month; `datetime`, `defaultdict`/`Counter` for stats
 - [ ] **8. AI auto-categorization** — `ai_helper.suggest_category(description: str) -> str` with Claude (`claude-haiku-5-5`) via the `anthropic` SDK; only food, transport, housing, entertainment, shopping, health or other (anything else becomes other); accept or override; falls back to manual on errors
+- [ ] **8a. SQLite storage** — `storage.py` switches from JSON to the built-in `sqlite3` with `expenses.db`: one row per expense with an `id`, parameterized queries, `GROUP BY` for totals; delete from the menu; one-time import of `expenses.json`
 - [ ] **9. REST API** — FastAPI app in `api.py` reusing `ExpenseTracker` and `storage`: list, add, delete, summary, filter, and suggest-category endpoints; CORS for the Angular dev server
 - [ ] **10a. Angular shell (mock data)** — can start right after stage 4: Angular app in `frontend/` with routing and layout; `Expense` interface; `ExpenseService` returning mock data; list page with total
 - [ ] **10. Angular: list and add** — switch `ExpenseService` to `HttpClient` against the API; add form with validation
@@ -89,10 +90,10 @@ expense-tracker/
 │   ├── main.py          # CLI screens + menu loop
 │   ├── prompts.py       # ask_text, ask_amount, ask_date, ask_frequency
 │   ├── models.py        # Expense, RecurringExpense, ExpenseTracker
-│   ├── storage.py       # load/save JSON
+│   ├── storage.py       # SQLite storage (JSON until stage 8a)
 │   ├── ai_helper.py     # AI category suggestion
 │   ├── api.py           # FastAPI REST API for the frontend
-│   ├── expenses.json    # data (git-ignored)
+│   ├── expenses.db      # data (git-ignored; expenses.json before stage 8a)
 │   └── requirements.txt # anthropic, fastapi, uvicorn
 ├── frontend/            # Angular app (ng new)
 │   └── src/app/
@@ -103,5 +104,5 @@ expense-tracker/
 
 ## Later
 
-Budget limits with warnings · charts in the Angular UI · SQLite instead of JSON · unit tests
+Budget limits with warnings · charts in the Angular UI · an ORM (SQLModel/SQLAlchemy) instead of hand-written SQL · unit tests
 (pytest, Angular tests) · more AI: natural-language input, monthly summary
