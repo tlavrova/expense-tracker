@@ -4,6 +4,7 @@ __pycache__/
 venv/
 .env
 backend/expenses.json
+backend/expenses.json.tmp
 *.log
 .DS_Store
 
