@@ -1,17 +1,26 @@
 """Command-line menu for the expense tracker: screens and the menu loop.
 
-Data rules live in models.py, the JSON file in storage.py, and input helpers in prompts.py.
+Data rules live in models.py, the JSON file in storage.py, input helpers in prompts.py and
+the @log_action decorator in decorators.py.
 """
 
 from __future__ import annotations
 
+import logging
 import sys
+from datetime import date
+from pathlib import Path
+from typing import Iterable
 
 import storage
+from decorators import log_action
 from models import Expense, ExpenseTracker, RecurringExpense
-from prompts import ask_amount, ask_date, ask_frequency, ask_text
+from prompts import ask_amount, ask_date, ask_frequency, ask_month, ask_text
+
+LOG_PATH = Path(__file__).parent / "expenses.log"
 
 
+@log_action
 def add_expense(tracker: ExpenseTracker) -> None:
     """Ask for an expense, add it to the tracker and save."""
     description = ask_text("Description: ")
@@ -34,16 +43,20 @@ def add_expense(tracker: ExpenseTracker) -> None:
     print("✅ Saved.")
 
 
-def print_expenses(expenses: list[Expense]) -> None:
-    """Print a numbered list of expenses and their total."""
-    if not expenses:
+def print_expenses(expenses: Iterable[Expense]) -> None:
+    """Print a numbered list of expenses and their total. Works with lists and generators."""
+    total = 0.0
+    count = 0
+    for count, expense in enumerate(expenses, start=1):
+        print(f"{count}. {expense}")
+        total += expense.amount
+    if count == 0:
         print("No expenses.")
-        return
-    for number, expense in enumerate(expenses, start=1):
-        print(f"{number}. {expense}")
-    print(f"Total spent: {sum(expense.amount for expense in expenses):.2f}")
+    else:
+        print(f"Total spent: {total:.2f}")
 
 
+@log_action
 def show_all(tracker: ExpenseTracker) -> None:
     """Print all expenses, optionally sorted by amount or date."""
     if not tracker:
@@ -54,6 +67,7 @@ def show_all(tracker: ExpenseTracker) -> None:
     print_expenses(tracker.sorted_by(key))
 
 
+@log_action
 def show_summary(tracker: ExpenseTracker) -> None:
     """Print totals per category, the overall total and the unique categories."""
     if not tracker:
@@ -68,6 +82,7 @@ def show_summary(tracker: ExpenseTracker) -> None:
     print(f"Categories ({len(categories)}): {', '.join(categories)}")
 
 
+@log_action
 def show_filtered(tracker: ExpenseTracker) -> None:
     """Ask for a category and print only its expenses."""
     if not tracker:
@@ -77,11 +92,45 @@ def show_filtered(tracker: ExpenseTracker) -> None:
     print_expenses(tracker.filter_by_category(category))
 
 
+@log_action
+def show_month(tracker: ExpenseTracker) -> None:
+    """Ask for a month and print its expenses, read one at a time from a generator."""
+    if not tracker:
+        print("No expenses yet.")
+        return
+    year, month = ask_month()
+    print(f"{date(year, month, 1):%B %Y}:")
+    print_expenses(tracker.expenses_in_month(year, month))
+
+
+@log_action
+def show_statistics(tracker: ExpenseTracker) -> None:
+    """Print counts per category, average and largest expense, and totals per month."""
+    if not tracker:
+        print("No expenses yet.")
+        return
+    print(f"Expenses: {len(tracker)}   Average: {tracker.average():.2f}")
+    print(f"Largest: {tracker.largest()}")
+    print("Most frequent categories:")
+    for category, count in tracker.count_by_category().most_common():
+        print(f"  {category}: {count}")
+    print("Totals per month:")
+    for month, total in tracker.totals_by_month().items():
+        print(f"  {month}: {total:.2f}")
+
+
 def main() -> None:
+    logging.basicConfig(
+        filename=LOG_PATH,
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(message)s",
+        encoding="utf-8",
+    )
     try:
         tracker = storage.load()
     except storage.StorageError as error:
         # Stop instead of starting empty: saving would overwrite the user's data.
+        logging.getLogger("expense_tracker").error("%s", error)
         print(f"❌ {error}")
         print("Fix or move the file, then start again.")
         sys.exit(1)
@@ -91,6 +140,8 @@ def main() -> None:
         "2": show_all,
         "3": show_summary,
         "4": show_filtered,
+        "5": show_month,
+        "6": show_statistics,
     }
     print("=== Expense Tracker ===")
     if tracker:
@@ -98,15 +149,16 @@ def main() -> None:
     try:
         while True:
             print()
-            print("1) Add expense   2) Show all   3) Summary   4) Filter   5) Quit")
+            print("1) Add expense   2) Show all   3) Summary   4) Filter")
+            print("5) Month   6) Statistics   7) Quit")
             choice = input("> ").strip()
-            if choice == "5":
+            if choice == "7":
                 break
             action = actions.get(choice)
             if action:
                 action(tracker)
             else:
-                print("Please choose 1, 2, 3, 4 or 5.")
+                print("Please choose 1–7.")
     except (KeyboardInterrupt, EOFError):  # Ctrl+C or Ctrl+D
         print()
     print("Bye!")

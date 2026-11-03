@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 
-from models import FREQUENCIES, InvalidAmountError, validate_amount, validate_date
+from models import FREQUENCIES, InvalidAmountError, parse_date, validate_amount
 
 
 def ask_text(prompt: str) -> str:
@@ -28,16 +28,31 @@ def ask_amount() -> float:
             print("⚠️  Please enter a number, for example 12.50.")
 
 
-def ask_date() -> str:
+def ask_date() -> date:
     """Ask until the answer is a real YYYY-MM-DD date; empty means today."""
     while True:
         answer = input("Date (YYYY-MM-DD, empty for today): ").strip()
         if not answer:
-            return date.today().isoformat()
+            return date.today()
         try:
-            return validate_date(answer)
+            return parse_date(answer)
         except ValueError:
             print("⚠️  Please enter a real date as YYYY-MM-DD, for example 2026-11-03.")
+
+
+def ask_month() -> tuple[int, int]:
+    """Ask until the answer is a month as YYYY-MM; empty means this month. Returns (year, month)."""
+    while True:
+        answer = input("Month (YYYY-MM, empty for this month): ").strip()
+        if not answer:
+            today = date.today()
+            return today.year, today.month
+        try:
+            parsed = datetime.strptime(answer, "%Y-%m")
+        except ValueError:
+            print("⚠️  Please enter a month as YYYY-MM, for example 2026-11.")
+            continue
+        return parsed.year, parsed.month
 
 
 def ask_frequency() -> str:
