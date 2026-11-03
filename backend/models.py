@@ -5,7 +5,31 @@ Nothing here reads input or prints, so the CLI (main.py), tests and the API can 
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
+from datetime import date as Date
+
+FREQUENCIES = ("weekly", "monthly", "yearly")
+
+
+class InvalidAmountError(ValueError):
+    """Raised when an amount is zero, negative or not a real number."""
+
+
+def validate_amount(amount: float) -> float:
+    """Return the amount if it is a positive, finite number; otherwise raise InvalidAmountError."""
+    if not math.isfinite(amount) or amount <= 0:
+        raise InvalidAmountError(f"Amount must be greater than zero, got {amount}.")
+    return amount
+
+
+def validate_date(value: str) -> str:
+    """Return the date if it is a real YYYY-MM-DD date; otherwise raise ValueError."""
+    try:
+        Date.fromisoformat(value)
+    except ValueError:
+        raise ValueError(f"Date must be a real date as YYYY-MM-DD, got {value!r}.") from None
+    return value
 
 
 @dataclass
@@ -15,13 +39,26 @@ class Expense:
     description: str
     date: str  # "YYYY-MM-DD"
 
+    def __post_init__(self) -> None:
+        validate_amount(self.amount)
+        validate_date(self.date)
+        if not self.description.strip():
+            raise ValueError("Description must not be empty.")
+        if not self.category.strip():
+            raise ValueError("Category must not be empty.")
+
     def __str__(self) -> str:
         return f"{self.date}  {self.description} — {self.amount:.2f} ({self.category})"
 
 
 @dataclass
 class RecurringExpense(Expense):
-    frequency: str  # e.g. "weekly", "monthly", "yearly"
+    frequency: str  # one of FREQUENCIES
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        if self.frequency not in FREQUENCIES:
+            raise ValueError(f"Frequency must be one of {', '.join(FREQUENCIES)}, got {self.frequency!r}.")
 
     def __str__(self) -> str:
         return f"{super().__str__()} 🔁 {self.frequency}"
