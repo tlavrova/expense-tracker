@@ -3,6 +3,11 @@ __pycache__/
 .venv/
 venv/
 .env
-expenses.json
+backend/expenses.json
 *.log
 .DS_Store
+
+# Angular
+node_modules/
+dist/
+.angular/
