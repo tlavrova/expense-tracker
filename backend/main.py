@@ -4,16 +4,67 @@ from __future__ import annotations
 
 from datetime import date
 
-from models import Expense, ExpenseTracker, RecurringExpense
+from models import (
+    FREQUENCIES,
+    Expense,
+    ExpenseTracker,
+    InvalidAmountError,
+    RecurringExpense,
+    validate_amount,
+    validate_date,
+)
+
+
+def ask_text(prompt: str) -> str:
+    """Ask until the answer is not empty."""
+    while True:
+        answer = input(prompt).strip()
+        if answer:
+            return answer
+        print("⚠️  This can't be empty.")
+
+
+def ask_amount() -> float:
+    """Ask until the answer is a number greater than zero."""
+    while True:
+        answer = input("Amount: ").strip().replace(",", ".")
+        try:
+            return validate_amount(float(answer))
+        except InvalidAmountError:
+            print("⚠️  The amount must be greater than zero.")
+        except ValueError:
+            print("⚠️  Please enter a number, for example 12.50.")
+
+
+def ask_date() -> str:
+    """Ask until the answer is a real YYYY-MM-DD date; empty means today."""
+    while True:
+        answer = input("Date (YYYY-MM-DD, empty for today): ").strip()
+        if not answer:
+            return date.today().isoformat()
+        try:
+            return validate_date(answer)
+        except ValueError:
+            print("⚠️  Please enter a real date as YYYY-MM-DD, for example 2026-11-03.")
+
+
+def ask_frequency() -> str:
+    """Ask until the answer is a known frequency or empty (not recurring)."""
+    options = "/".join(FREQUENCIES)
+    while True:
+        answer = input(f"Repeats ({options}, empty if not): ").strip().lower()
+        if not answer or answer in FREQUENCIES:
+            return answer
+        print(f"⚠️  Please choose {options}, or leave it empty.")
 
 
 def add_expense(tracker: ExpenseTracker) -> Expense:
     """Ask for an expense, add it to the tracker and return it."""
-    description = input("Description: ").strip()
-    amount = float(input("Amount: "))
-    category = input("Category: ").strip().lower()
-    when = input("Date (YYYY-MM-DD, empty for today): ").strip() or date.today().isoformat()
-    frequency = input("Repeats (weekly/monthly/yearly, empty if not): ").strip().lower()
+    description = ask_text("Description: ")
+    amount = ask_amount()
+    category = ask_text("Category: ").lower()
+    when = ask_date()
+    frequency = ask_frequency()
 
     expense: Expense
     if frequency:
@@ -64,7 +115,7 @@ def show_filtered(tracker: ExpenseTracker) -> None:
     if not tracker:
         print("No expenses yet.")
         return
-    category = input("Category: ")
+    category = ask_text("Category: ")
     print_expenses(tracker.filter_by_category(category))
 
 
@@ -77,18 +128,21 @@ def main() -> None:
         "4": show_filtered,
     }
     print("=== Expense Tracker ===")
-    while True:
+    try:
+        while True:
+            print()
+            print("1) Add expense   2) Show all   3) Summary   4) Filter   5) Quit")
+            choice = input("> ").strip()
+            if choice == "5":
+                break
+            action = actions.get(choice)
+            if action:
+                action(tracker)
+            else:
+                print("Please choose 1, 2, 3, 4 or 5.")
+    except (KeyboardInterrupt, EOFError):  # Ctrl+C or Ctrl+D
         print()
-        print("1) Add expense   2) Show all   3) Summary   4) Filter   5) Quit")
-        choice = input("> ").strip()
-        if choice == "5":
-            print("Bye!")
-            break
-        action = actions.get(choice)
-        if action:
-            action(tracker)
-        else:
-            print("Please choose 1, 2, 3, 4 or 5.")
+    print("Bye!")
 
 
 if __name__ == "__main__":
