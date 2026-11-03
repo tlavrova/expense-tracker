@@ -1,0 +1,37 @@
+<h1>Expenses</h1>
+
+@if (expenses().length) {
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col">Date</th>
+        <th scope="col">Description</th>
+        <th scope="col">Category</th>
+        <th scope="col" class="amount">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (expense of expenses(); track expense.id) {
+        <tr>
+          <td>{{ expense.date | date: 'mediumDate' }}</td>
+          <td>
+            {{ expense.description }}
+            @if (expense.frequency) {
+              <span class="badge" title="Recurring">🔁 {{ expense.frequency }}</span>
+            }
+          </td>
+          <td>{{ expense.category }}</td>
+          <td class="amount">{{ expense.amount | number: '1.2-2' }}</td>
+        </tr>
+      }
+    </tbody>
+    <tfoot>
+      <tr>
+        <th scope="row" colspan="3">Total spent</th>
+        <td class="amount total">{{ total() | number: '1.2-2' }}</td>
+      </tr>
+    </tfoot>
+  </table>
+} @else {
+  <p class="empty">No expenses yet.</p>
+}
