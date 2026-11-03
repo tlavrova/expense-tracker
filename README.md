@@ -94,7 +94,8 @@ cd frontend && npm start                 # UI on http://localhost:4200
 ```
 expense-tracker/
 ├── backend/
-│   ├── main.py          # CLI screens + menu loop
+│   ├── main.py          # CLI start: logging, load data, menu loop
+│   ├── screens.py       # one function per menu option
 │   ├── prompts.py       # ask_text, ask_amount, ask_date, ask_month, ask_frequency
 │   ├── decorators.py    # @log_action
 │   ├── models.py        # Expense, RecurringExpense, ExpenseTracker
