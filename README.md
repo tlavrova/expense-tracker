@@ -6,7 +6,8 @@ description.
 
 A pet project to practise the Complete Python Bootcamp, one stage per course section. The Python
 core starts as a command-line app (stages 1–8), then gets a REST API (FastAPI) and an
-Angular frontend (stages 9–11).
+Angular frontend (stages 9–11). The Angular shell (10a) starts with mock data right after
+stage 4, alongside the remaining Python stages.
 
 ```
 === Expense Tracker ===
@@ -30,7 +31,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Frontend (from stage 10; needs Node.js LTS and the Angular CLI):
+Frontend (from stage 10a; needs Node.js LTS and the Angular CLI):
 
 ```bash
 npm install -g @angular/cli
@@ -76,7 +77,8 @@ cd frontend && ng serve                  # UI on http://localhost:4200
 - [ ] **7. Advanced Python** — `@log_action` decorator; generator for a chosen month; `datetime`, `defaultdict`/`Counter` for stats
 - [ ] **8. AI auto-categorization** — `ai_helper.suggest_category(description: str) -> str` with Claude (`claude-haiku-5-5`) via the `anthropic` SDK; only food, transport, housing, entertainment, shopping, health or other (anything else becomes other); accept or override; falls back to manual on errors
 - [ ] **9. REST API** — FastAPI app in `api.py` reusing `ExpenseTracker` and `storage`: list, add, delete, summary, filter, and suggest-category endpoints; CORS for the Angular dev server
-- [ ] **10. Angular: list and add** — Angular app in `frontend/`; `ExpenseService` with `HttpClient`; expense list with total; add form with validation
+- [ ] **10a. Angular shell (mock data)** — can start right after stage 4: Angular app in `frontend/` with routing and layout; `Expense` interface; `ExpenseService` returning mock data; list page with total
+- [ ] **10. Angular: list and add** — switch `ExpenseService` to `HttpClient` against the API; add form with validation
 - [ ] **11. Angular: summary, filter and AI** — totals per category, filter by category and month, sort; AI suggestion in the add form (accept or override, manual fallback)
 
 ## Structure
