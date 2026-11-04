@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
-import { AddExpense } from './add-expense/add-expense';
-import { ExpenseList } from './expense-list/expense-list';
-import { Summary } from './summary/summary';
+import { AddExpense } from './expenses/add-expense/add-expense';
+import { ExpenseList } from './expenses/expense-list/expense-list';
+import { Summary } from './expenses/summary/summary';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'expenses' },

@@ -4,6 +4,8 @@ Which database comes from the DATABASE_URL environment variable:
   not set                          SQLite file expenses.db next to this file (on your Mac)
   postgresql://user:pass@host/db   Postgres (online, stage 13; needs a Postgres driver then)
 
+SQL_ECHO=1 prints every SQL statement SQLModel sends, to see what the query builder produces.
+
 Each expense is one row with an id. ExpenseRow is the table; models.py keeps plain dataclasses,
 so it doesn't depend on the database, and this module converts between the two.
 Nothing here reads input or prints, so the API (stage 9) can reuse it.
@@ -13,6 +15,7 @@ from __future__ import annotations
 
 import functools
 import json
+import logging
 import os
 from contextlib import contextmanager
 from datetime import date as Date
@@ -27,6 +30,8 @@ from models import Expense, ExpenseTracker, RecurringExpense
 
 DEFAULT_DB_PATH = Path(__file__).parent / "expenses.db"
 JSON_PATH = Path(__file__).parent / "expenses.json"  # the file used before stage 8a
+
+logger = logging.getLogger("expense_tracker")
 
 
 class StorageError(Exception):
@@ -63,7 +68,8 @@ def get_engine(url: str | None = None) -> Engine:
     # SQLite allows one thread per connection by default; the API (stage 9) uses several.
     connect_args = {"check_same_thread": False} if url.startswith("sqlite") else {}
     try:
-        engine = create_engine(url, connect_args=connect_args)
+        echo = os.environ.get("SQL_ECHO", "").strip() == "1"
+        engine = create_engine(url, connect_args=connect_args, echo=echo)
         SQLModel.metadata.create_all(engine)
     except SQLAlchemyError as error:
         raise StorageError(f"Can't open the database: {_short(error)}") from error
@@ -163,10 +169,17 @@ def totals_by_month(engine: Engine | None = None) -> dict[str, float]:
 def import_json(path: Path = JSON_PATH, engine: Engine | None = None) -> int:
     """Move the expenses from the old expenses.json into the database, once.
 
-    All rows go in in one transaction, then the file is renamed to expenses.json.imported so the
-    next start doesn't import it again. Returns how many expenses were imported (0: no file).
+    Only into an empty database, so nothing is ever imported twice (for example when the app
+    stopped after importing but before renaming). All rows go in in one transaction, then the file
+    is renamed to expenses.json.imported so the next start doesn't import it again.
+    Returns how many expenses were imported (0: no file, or the database already has expenses).
     """
     if not path.exists():
+        return 0
+    with _session("check the database", engine) as session:
+        has_expenses = session.exec(select(ExpenseRow.id).limit(1)).first() is not None
+    if has_expenses:
+        logger.warning("Not importing %s: the database already has expenses.", path)
         return 0
     try:
         with path.open(encoding="utf-8") as file:

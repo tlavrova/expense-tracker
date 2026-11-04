@@ -1,7 +1,7 @@
 import { DecimalPipe, PercentPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { apiErrorMessage } from '../api-error';
+import { apiErrorMessage } from '../../core/api-error';
 import { Summary as SummaryData } from '../expense.model';
 import { ExpenseService } from '../expense.service';
 

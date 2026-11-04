@@ -1,0 +1,38 @@
+:host {
+  display: block;
+  overflow-x: auto;
+}
+
+.badge {
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  background: var(--accent-soft);
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.actions {
+  text-align: right;
+}
+
+.delete {
+  padding: 0.2rem 0.6rem;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--danger);
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.delete:hover:not(:disabled) {
+  background: var(--hover);
+}
+
+.delete:disabled {
+  color: var(--muted);
+  cursor: default;
+}

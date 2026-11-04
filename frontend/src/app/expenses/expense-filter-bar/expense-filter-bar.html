@@ -1,0 +1,45 @@
+<form class="filters" role="search" aria-label="Filter expenses" (submit)="$event.preventDefault()">
+  <label>
+    <span>Category</span>
+    <input
+      #category
+      name="category"
+      list="filter-categories"
+      placeholder="All"
+      autocomplete="off"
+      [value]="filters().category ?? ''"
+      (change)="changed.emit({ name: 'category', value: category.value })"
+    />
+    <datalist id="filter-categories">
+      @for (option of categories; track option) {
+        <option [value]="option"></option>
+      }
+    </datalist>
+  </label>
+  <label>
+    <span>Month</span>
+    <input
+      #month
+      name="month"
+      type="month"
+      [value]="filters().month ?? ''"
+      (change)="changed.emit({ name: 'month', value: month.value })"
+    />
+  </label>
+  <label>
+    <span>Sort</span>
+    <select
+      #sort
+      name="sort"
+      [value]="filters().sort ?? ''"
+      (change)="changed.emit({ name: 'sort', value: sort.value })"
+    >
+      <option value="">As entered</option>
+      <option value="date">Date, oldest first</option>
+      <option value="amount">Amount, largest first</option>
+    </select>
+  </label>
+  @if (active()) {
+    <button type="button" class="link clear" (click)="cleared.emit()">Clear</button>
+  }
+</form>

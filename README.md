@@ -76,11 +76,12 @@ Postgres:
 
 ```bash
 export DATABASE_URL=postgresql://user:password@host/dbname   # optional; default is expenses.db
+export SQL_ECHO=1                                            # optional; print the SQL SQLModel sends
 ```
 
 Upgrading from stage 7 or 8: on the first start, the expenses in `backend/expenses.json` are moved
 into the database once, and the file is renamed to `expenses.json.imported` (keep it as a backup
-or delete it).
+or delete it). This only happens while the database is still empty, so nothing is imported twice.
 
 ## Run
 
@@ -154,22 +155,29 @@ expense-tracker/
 │   ├── models.py        # Expense, RecurringExpense, ExpenseTracker
 │   ├── storage.py       # database storage via SQLModel: add, delete, totals, JSON import
 │   ├── ai_helper.py     # AI category suggestion (Gemini)
-│   ├── api.py           # FastAPI REST API for the frontend
+│   ├── api.py           # FastAPI app: CORS, error format, includes the routers
+│   ├── schemas.py       # the API's JSON shapes (Pydantic)
+│   ├── routers/
+│   │   └── expenses.py  # /expenses, /summary, /suggest-category
 │   ├── expenses.db      # local SQLite data (git-ignored; created on first start)
 │   ├── expenses.log     # action log from @log_action (git-ignored)
 │   └── requirements.txt # google-genai, fastapi, uvicorn, sqlmodel
 ├── frontend/            # Angular 22 app
 │   └── src/
 │       ├── environments/environment.ts  # apiUrl: where the API runs
+│       ├── styles.css                   # colors, form fields, buttons and tables shared by all pages
 │       └── app/
-│           ├── expense.model.ts    # Expense, NewExpense, Summary types; CATEGORIES, FREQUENCIES
-│           ├── expense.service.ts  # the only data source: HttpClient calls to the API
-│           ├── api-error.ts        # turns a failed API call into a sentence for the page
 │           ├── app.ts / app.html   # layout: header + navigation
 │           ├── app.routes.ts       # /expenses, /expenses/new, /summary
-│           ├── expense-list/       # list with filters (kept in the address), total and delete
-│           ├── add-expense/        # add form with validation and the AI category suggestion
-│           └── summary/            # totals per category with their share
+│           ├── core/
+│           │   └── api-error.ts    # turns a failed API call into a sentence for the page
+│           └── expenses/
+│               ├── expense.model.ts    # Expense, NewExpense, Summary, filters; CATEGORIES, FREQUENCIES
+│               ├── expense.service.ts  # the only data source: HttpClient calls to the API
+│               ├── expense-list/       # list with filters (kept in the address), total and delete
+│               ├── expense-filter-bar/ # category, month and sort fields above the list
+│               ├── add-expense/        # add form with validation and the AI category suggestion
+│               └── summary/            # totals per category with their share
 └── README.md
 ```
 
