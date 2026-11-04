@@ -21,6 +21,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+import json_import
 import storage
 from routers import expenses
 
@@ -30,7 +31,7 @@ ALLOWED_ORIGINS = ["http://localhost:4200"]
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    storage.import_json()  # the same one-time move of expenses.json as the CLI; opens the database
+    json_import.import_json()  # the same one-time move of expenses.json as the CLI; opens the database
     yield
 
 

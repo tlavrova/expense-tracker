@@ -153,7 +153,9 @@ expense-tracker/
 │   ├── prompts.py       # ask_text, ask_amount, ask_date, ask_month, ask_frequency
 │   ├── decorators.py    # @log_action
 │   ├── models.py        # Expense, RecurringExpense, ExpenseTracker
-│   ├── storage.py       # database storage via SQLModel: add, delete, totals, JSON import
+│   ├── database.py      # database connection (DATABASE_URL, SQL_ECHO) and the table classes
+│   ├── storage.py       # the queries: load, add, delete, totals (GROUP BY)
+│   ├── json_import.py   # one-time move of the old expenses.json into the database
 │   ├── ai_helper.py     # AI category suggestion (Gemini)
 │   ├── api.py           # FastAPI app: CORS, error format, includes the routers
 │   ├── schemas.py       # the API's JSON shapes (Pydantic)
