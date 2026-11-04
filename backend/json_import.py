@@ -16,7 +16,7 @@ from sqlmodel import select
 import database
 from database import ExpenseRow, StorageError
 from models import Expense, RecurringExpense
-from storage import row_from_expense
+from storage import LOCAL, row_from_expense
 
 JSON_PATH = Path(__file__).parent / "expenses.json"
 
@@ -48,7 +48,7 @@ def import_json(path: Path = JSON_PATH, engine: Engine | None = None) -> int:
         raise StorageError(f"Can't read {path}: {error}") from error
 
     with database.open_session(f"import {path}", engine) as session:
-        session.add_all(row_from_expense(expense) for expense in expenses)
+        session.add_all(row_from_expense(expense, LOCAL) for expense in expenses)  # the CLI's own
         session.commit()
     path.rename(path.with_name(path.name + ".imported"))
     return len(expenses)

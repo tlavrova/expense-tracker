@@ -45,7 +45,7 @@ def main() -> None:
     logging.getLogger("expense_tracker").setLevel(logging.INFO)  # our own actions in full
     try:
         imported = json_import.import_json()  # once: the expenses.json used before stage 8a
-        tracker = storage.load()
+        tracker = storage.load(owner=storage.LOCAL)  # the CLI's own expenses, no account
     except storage.StorageError as error:
         logging.getLogger("expense_tracker").error("%s", error)
         print(f"❌ {error}")

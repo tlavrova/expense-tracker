@@ -2,3 +2,8 @@ google-genai
 fastapi
 uvicorn[standard]
 sqlmodel
+alembic
+pwdlib[argon2]
+PyJWT
+pydantic[email]
+python-multipart

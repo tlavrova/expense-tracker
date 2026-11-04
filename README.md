@@ -83,6 +83,27 @@ Upgrading from stage 7 or 8: on the first start, the expenses in `backend/expens
 into the database once, and the file is renamed to `expenses.json.imported` (keep it as a backup
 or delete it). This only happens while the database is still empty, so nothing is imported twice.
 
+The tables are created and updated by Alembic migrations (`backend/migrations/`). They run by
+themselves when the app starts, so an older `expenses.db` is upgraded automatically; its
+expenses stay the command-line app's own. After changing a table class in `database.py`, draft
+the next migration with `cd backend && alembic revision --autogenerate -m "what changed"`.
+
+## Login (website)
+
+On the website, everyone has their own account and sees only their own expenses. Passwords are
+stored only as argon2 hashes. After login the browser gets a token, signed with a secret that the
+API reads from `JWT_SECRET`; the API won't start without it. Make a random one once and keep it
+in `~/.zshrc` (outside the project, so it can never be committed), next to the Gemini key:
+
+```bash
+python3 -c "import secrets; print(secrets.token_urlsafe(32))"   # prints a new random secret
+export JWT_SECRET=...                                           # paste it here
+```
+
+Changing the secret logs everyone out. Online (stage 13) it goes into the hosting service's
+settings instead. The command-line app doesn't need it: it stays a local tool with its own
+expenses, separate from the website accounts.
+
 ## Run
 
 Command-line app (stages 1–8):
@@ -113,17 +134,23 @@ cd frontend && npm test
 ## API
 
 FastAPI in `backend/api.py`; start it with `uvicorn api:app --reload` and try every endpoint at
-http://localhost:8000/docs. It uses the same database and rules as the command-line app.
+http://localhost:8000/docs (sign up there, then use "Authorize" with your email and password). It
+uses the same database and rules as the command-line app.
 
 | Request | Does | Answer |
 |---|---|---|
-| `GET /expenses` | all expenses; optional `?category=food`, `?month=2026-11`, `?sort=amount` or `date` | list |
+| `POST /auth/signup` | `{"email": "...", "password": "..."}` (8+ characters); creates an account and logs in | `201` + `{"access_token": "...", "token_type": "bearer"}`, or `409` if the email has an account |
+| `POST /auth/login` | form fields `username` (the email) and `password` | the same token, or `401` |
+| `GET /auth/me` | who is logged in | `{"id": 1, "email": "..."}` |
+| `GET /expenses` | your expenses; optional `?category=food`, `?month=2026-11`, `?sort=amount` or `date` | list |
 | `POST /expenses` | add one (amount, category, description, date, optional frequency) | `201` + the saved expense with its `id` |
 | `DELETE /expenses/{id}` | delete one | `204`, or `404` |
 | `GET /summary` | totals per category and overall | `{"totalsByCategory": {...}, "total": ...}` |
 | `POST /suggest-category` | `{"description": "..."}` → Gemini's category | `{"category": "..."}`, or `503` when AI isn't available |
 
-Errors always look like `{"detail": "a readable message"}` (`422` for invalid input).
+Everything except sign-up and login needs the header `Authorization: Bearer <access_token>`;
+without a valid one the answer is `401`. Another account's expense answers `404`, as if it didn't
+exist. Errors always look like `{"detail": "a readable message"}` (`422` for invalid input).
 
 ## Stages
 
@@ -153,17 +180,22 @@ expense-tracker/
 │   ├── prompts.py       # ask_text, ask_amount, ask_date, ask_month, ask_frequency
 │   ├── decorators.py    # @log_action
 │   ├── models.py        # Expense, RecurringExpense, ExpenseTracker
-│   ├── database.py      # database connection (DATABASE_URL, SQL_ECHO) and the table classes
-│   ├── storage.py       # the queries: load, add, delete, totals (GROUP BY)
+│   ├── database.py      # database connection (DATABASE_URL, SQL_ECHO), table classes, migrations
+│   ├── storage.py       # expense queries for one owner (the CLI, or one account): list, add, delete, totals
+│   ├── users.py         # accounts: create, find by email or id
+│   ├── security.py      # password hashing, login tokens (JWT_SECRET), the logged-in user
+│   ├── alembic.ini      # Alembic settings (database migrations)
+│   ├── migrations/      # migration scripts: 0001 expenses table, 0002 users + expenses.user_id
 │   ├── json_import.py   # one-time move of the old expenses.json into the database
 │   ├── ai_helper.py     # AI category suggestion (Gemini)
 │   ├── api.py           # FastAPI app: CORS, error format, includes the routers
 │   ├── schemas.py       # the API's JSON shapes (Pydantic)
 │   ├── routers/
-│   │   └── expenses.py  # /expenses, /summary, /suggest-category
+│   │   ├── auth.py      # /auth/signup, /auth/login, /auth/me
+│   │   └── expenses.py  # /expenses, /summary, /suggest-category (login required)
 │   ├── expenses.db      # local SQLite data (git-ignored; created on first start)
 │   ├── expenses.log     # action log from @log_action (git-ignored)
-│   └── requirements.txt # google-genai, fastapi, uvicorn, sqlmodel
+│   └── requirements.txt # google-genai, fastapi, uvicorn, sqlmodel, alembic, pwdlib, PyJWT, …
 ├── frontend/            # Angular 22 app
 │   └── src/
 │       ├── environments/environment.ts  # apiUrl: where the API runs

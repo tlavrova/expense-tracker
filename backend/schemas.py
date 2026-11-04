@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from pydantic.alias_generators import to_camel
 
 
@@ -42,3 +42,24 @@ class SuggestionRequest(BaseModel):
 
 class Suggestion(BaseModel):
     category: str
+
+
+class SignupRequest(BaseModel):
+    """A new account; the email is checked to look like one (pydantic[email])."""
+
+    email: EmailStr
+    password: str = Field(min_length=8, max_length=128)
+
+
+class Token(BaseModel):
+    """What sign-up and login return; the browser sends access_token back as "Bearer <token>"."""
+
+    access_token: str
+    token_type: str = "bearer"
+
+
+class UserOut(BaseModel):
+    """The logged-in user (never the password hash)."""
+
+    id: int
+    email: str
