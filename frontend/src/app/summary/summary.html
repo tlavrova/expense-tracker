@@ -1,2 +1,51 @@
 <h1>Summary</h1>
-<p class="placeholder">Totals per category come in stage 11.</p>
+
+@if (error()) {
+  <p class="error" role="alert">
+    {{ error() }}
+    <button type="button" class="link" (click)="load()">Try again</button>
+  </p>
+}
+
+@let data = summary();
+@if (data === null) {
+  @if (!error()) {
+    <p class="muted">Loading…</p>
+  }
+} @else if (rows().length) {
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col">Category</th>
+        <th scope="col" class="share-column">Share</th>
+        <th scope="col" class="amount">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (row of rows(); track row.category) {
+        <tr>
+          <th scope="row" class="category">
+            <a [routerLink]="['/expenses']" [queryParams]="{ category: row.category }">{{
+              row.category
+            }}</a>
+          </th>
+          <td class="share-column">
+            <span class="bar" aria-hidden="true"
+              ><span [style.width.%]="row.share * 100"></span
+            ></span>
+            <span class="percent">{{ row.share | percent: '1.0-0' }}</span>
+          </td>
+          <td class="amount">{{ row.total | number: '1.2-2' }}</td>
+        </tr>
+      }
+    </tbody>
+    <tfoot>
+      <tr>
+        <th scope="row" colspan="2">Total spent</th>
+        <td class="amount total">{{ data.total | number: '1.2-2' }}</td>
+      </tr>
+    </tfoot>
+  </table>
+} @else {
+  <p class="muted">No expenses yet. <a routerLink="/expenses/new">Add the first one</a>.</p>
+}

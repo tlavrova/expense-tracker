@@ -1,5 +1,51 @@
 <h1>Expenses</h1>
 
+<form class="filters" role="search" aria-label="Filter expenses" (submit)="$event.preventDefault()">
+  <label>
+    <span>Category</span>
+    <input
+      #category
+      name="category"
+      list="filter-categories"
+      placeholder="All"
+      autocomplete="off"
+      [value]="filters().category ?? ''"
+      (change)="setFilter('category', category.value)"
+    />
+    <datalist id="filter-categories">
+      @for (option of categories; track option) {
+        <option [value]="option"></option>
+      }
+    </datalist>
+  </label>
+  <label>
+    <span>Month</span>
+    <input
+      #month
+      name="month"
+      type="month"
+      [value]="filters().month ?? ''"
+      (change)="setFilter('month', month.value)"
+    />
+  </label>
+  <label>
+    <span>Sort</span>
+    <select
+      #sort
+      name="sort"
+      [value]="filters().sort ?? ''"
+      (change)="setFilter('sort', sort.value)"
+    >
+      <option value="">As entered</option>
+      <option value="date">Date, oldest first</option>
+      <option value="amount">Amount, largest first</option>
+    </select>
+  </label>
+  @if (filtered() || filters().sort) {
+    <button type="button" class="link clear" (click)="clearFilters()">Clear</button>
+  }
+</form>
+
 @if (error()) {
   <p class="error" role="alert">
     {{ error() }}
@@ -51,12 +97,17 @@
     </tbody>
     <tfoot>
       <tr>
-        <th scope="row" colspan="3">Total spent</th>
+        <th scope="row" colspan="3">{{ filtered() ? 'Total shown' : 'Total spent' }}</th>
         <td class="amount total">{{ total() | number: '1.2-2' }}</td>
         <td></td>
       </tr>
     </tfoot>
   </table>
+} @else if (filtered()) {
+  <p class="muted">
+    No expenses match these filters.
+    <button type="button" class="link" (click)="clearFilters()">Show all</button>
+  </p>
 } @else {
   <p class="muted">No expenses yet. <a routerLink="/expenses/new">Add the first one</a>.</p>
 }

@@ -138,7 +138,7 @@ Errors always look like `{"detail": "a readable message"}` (`422` for invalid in
 - [x] **9. REST API** — FastAPI app in `api.py` reusing `ExpenseTracker` and `storage`: list, add, delete, summary, filter, and suggest-category endpoints; CORS for the Angular dev server
 - [x] **10a. Angular shell (mock data)** — can start right after stage 4: Angular app in `frontend/` with routing and layout; `Expense` interface; `ExpenseService` returning mock data; list page with total
 - [x] **10. Angular: list and add** — switch `ExpenseService` to `HttpClient` against the API; add form with validation
-- [ ] **11. Angular: summary, filter and AI** — totals per category, filter by category and month, sort; AI suggestion in the add form (accept or override, manual fallback)
+- [x] **11. Angular: summary, filter and AI** — totals per category, filter by category and month, sort; AI suggestion in the add form (accept or override, manual fallback)
 - [ ] **12. Login** — sign-up and login (hashed passwords, token) in FastAPI; each expense belongs to a user; Angular login page, interceptor and route guard
 - [ ] **13. Deploy** — Angular on GitHub Pages (GitHub Actions), FastAPI on a free host, free hosted Postgres, Gemini key as a host secret; the site works from any device
 
@@ -167,9 +167,9 @@ expense-tracker/
 │           ├── api-error.ts        # turns a failed API call into a sentence for the page
 │           ├── app.ts / app.html   # layout: header + navigation
 │           ├── app.routes.ts       # /expenses, /expenses/new, /summary
-│           ├── expense-list/       # list page with total and delete
-│           ├── add-expense/        # add form with validation
-│           └── summary/            # placeholder until stage 11
+│           ├── expense-list/       # list with filters (kept in the address), total and delete
+│           ├── add-expense/        # add form with validation and the AI category suggestion
+│           └── summary/            # totals per category with their share
 └── README.md
 ```
 

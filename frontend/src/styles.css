@@ -74,3 +74,37 @@ button.link {
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+
+/* Tables on the list and summary pages */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.table th,
+.table td {
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.table thead th {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.table tfoot th,
+.table tfoot td {
+  border-bottom: none;
+  font-weight: 700;
+}
+
+.table .amount {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

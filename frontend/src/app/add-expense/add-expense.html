@@ -7,7 +7,12 @@
 
   <label class="field">
     <span>Description</span>
-    <input formControlName="description" placeholder="Uber to airport" autocomplete="off" />
+    <input
+      formControlName="description"
+      placeholder="Uber to airport"
+      autocomplete="off"
+      (blur)="descriptionDone()"
+    />
     @if (showError('description')) {
       <small class="field-error">Please describe the expense.</small>
     }
@@ -34,19 +39,48 @@
     }
   </label>
 
-  <label class="field">
-    <span>Category</span>
-    <input formControlName="category" list="categories" placeholder="food" autocomplete="off" />
+  <div class="field">
+    <div class="label-row">
+      <label for="category">Category</label>
+      @if (form.controls.description.value.trim() && ai() !== 'asking') {
+        <button type="button" class="link suggest" (click)="suggest()">
+          🤖 {{ ai() === 'suggested' ? 'Suggest again' : 'Suggest' }}
+        </button>
+      }
+    </div>
+    <input
+      id="category"
+      formControlName="category"
+      list="categories"
+      placeholder="food"
+      autocomplete="off"
+    />
     <datalist id="categories">
       @for (category of categories; track category) {
         <option [value]="category"></option>
       }
     </datalist>
-    <small class="hint">Pick one or type your own.</small>
+    <!-- polite: screen readers announce the AI's answer once it arrives -->
+    <small class="hint" aria-live="polite">
+      @switch (ai()) {
+        @case ('asking') {
+          🤖 Asking Gemini… you can keep typing.
+        }
+        @case ('suggested') {
+          🤖 Suggested by AI. Change it if it's wrong.
+        }
+        @case ('failed') {
+          <span class="ai-failed">No AI suggestion: {{ aiError() }} Please pick a category.</span>
+        }
+        @default {
+          Pick one or type your own. Leave it empty and AI suggests one.
+        }
+      }
+    </small>
     @if (showError('category')) {
       <small class="field-error">Please choose or type a category.</small>
     }
-  </label>
+  </div>
 
   <label class="field">
     <span>Date</span>

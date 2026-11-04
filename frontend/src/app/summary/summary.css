@@ -1,3 +1,40 @@
-.placeholder {
+:host {
+  display: block;
+  overflow-x: auto;
+}
+
+.table tbody th {
+  font-weight: 400;
+}
+
+.category a {
+  color: inherit;
+}
+
+.share-column {
+  width: 45%;
+}
+
+.bar {
+  display: inline-block;
+  width: calc(100% - 3.5rem);
+  height: 0.5rem;
+  margin-right: 0.5rem;
+  vertical-align: middle;
+  background: var(--hover);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.bar > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 999px;
+}
+
+.percent {
+  font-size: 0.85rem;
   color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }

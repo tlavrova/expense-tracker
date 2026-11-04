@@ -1,7 +1,17 @@
 <header class="header">
   <a class="brand" routerLink="/">Expense Tracker</a>
   <nav class="nav" aria-label="Main">
-    <a routerLink="/expenses" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Expenses</a>
+    <a
+      routerLink="/expenses"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{
+        paths: 'exact',
+        queryParams: 'ignored',
+        matrixParams: 'ignored',
+        fragment: 'ignored',
+      }"
+      >Expenses</a
+    >
     <a routerLink="/expenses/new" routerLinkActive="active">Add expense</a>
     <a routerLink="/summary" routerLinkActive="active">Summary</a>
   </nav>

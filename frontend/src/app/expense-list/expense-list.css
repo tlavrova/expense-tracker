@@ -3,39 +3,6 @@
   overflow-x: auto;
 }
 
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-}
-
-.table th,
-.table td {
-  padding: 0.6rem 0.75rem;
-  text-align: left;
-  border-bottom: 1px solid var(--border);
-}
-
-.table thead th {
-  font-size: 0.85rem;
-  color: var(--muted);
-  font-weight: 600;
-}
-
-.table tfoot th,
-.table tfoot td {
-  border-bottom: none;
-  font-weight: 700;
-}
-
-.table .amount {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
 .badge {
   margin-left: 0.4rem;
   padding: 0.1rem 0.45rem;
@@ -68,4 +35,37 @@
 .delete:disabled {
   color: var(--muted);
   cursor: default;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.filters label {
+  display: grid;
+  gap: 0.2rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.filters input,
+.filters select {
+  min-width: 9rem;
+  height: 2.4rem; /* inputs, the month picker and the select all differ by default */
+  padding: 0 0.5rem;
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.filters .clear {
+  align-self: center;
+  margin: 1.2rem 0 0; /* line up with the inputs, below their labels */
 }

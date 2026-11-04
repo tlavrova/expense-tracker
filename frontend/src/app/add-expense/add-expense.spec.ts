@@ -1,14 +1,17 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 import { ExpenseService } from '../expense.service';
 import { AddExpense, today } from './add-expense';
 
-async function render(add: ExpenseService['add']) {
+async function render(
+  add: ExpenseService['add'],
+  suggestCategory: ExpenseService['suggestCategory'] = vi.fn(),
+) {
   await TestBed.configureTestingModule({
     imports: [AddExpense],
-    providers: [provideRouter([]), { provide: ExpenseService, useValue: { add } }],
+    providers: [provideRouter([]), { provide: ExpenseService, useValue: { add, suggestCategory } }],
   }).compileComponents();
   const fixture = TestBed.createComponent(AddExpense);
   await fixture.whenStable();
@@ -26,7 +29,15 @@ async function render(add: ExpenseService['add']) {
     page.querySelector('form')!.dispatchEvent(new Event('submit'));
     await fixture.whenStable();
   };
-  return { page, navigate, type, submit };
+  /** Leave a field, as tabbing to the next one does. */
+  const leave = async (name: string) => {
+    page.querySelector(`[formControlName=${name}]`)!.dispatchEvent(new Event('blur'));
+    await fixture.whenStable();
+  };
+  const value = (name: string) =>
+    page.querySelector<HTMLInputElement>(`[formControlName=${name}]`)!.value;
+  const hint = () => page.querySelector('.hint')?.textContent?.trim() ?? '';
+  return { page, navigate, type, submit, leave, value, hint, fixture };
 }
 
 describe('AddExpense', () => {
@@ -126,5 +137,93 @@ describe('AddExpense', () => {
 describe('today()', () => {
   it('uses the local date, padded', () => {
     expect(today(new Date(2026, 0, 5, 23, 30))).toBe('2026-01-05');
+  });
+});
+
+describe('AddExpense: AI category suggestion', () => {
+  it('asks when the description is left with no category, and fills in the answer', async () => {
+    const suggest = vi.fn(() => of('transport'));
+    const { type, leave, value, hint } = await render(vi.fn(), suggest);
+    type('description', ' Uber to airport ');
+    await leave('description');
+    expect(suggest).toHaveBeenCalledWith('Uber to airport');
+    expect(value('category')).toBe('transport');
+    expect(hint()).toContain('Suggested by AI');
+  });
+
+  it('does not ask when a category is already there', async () => {
+    const suggest = vi.fn(() => of('transport'));
+    const { type, leave, value } = await render(vi.fn(), suggest);
+    type('category', 'travel');
+    type('description', 'Uber to airport');
+    await leave('description');
+    expect(suggest).not.toHaveBeenCalled();
+    expect(value('category')).toBe('travel');
+  });
+
+  it('asks only once per description (free-tier limit)', async () => {
+    const suggest = vi.fn(() => of('transport'));
+    const { type, leave } = await render(vi.fn(), suggest);
+    type('description', 'Uber to airport');
+    await leave('description');
+    type('category', '');
+    await leave('description');
+    expect(suggest).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows "Asking Gemini…" and keeps a category typed meanwhile', async () => {
+    const answer = new Subject<string>();
+    const { type, leave, value, hint, fixture } = await render(vi.fn(), () => answer);
+    type('description', 'Uber to airport');
+    await leave('description');
+    expect(hint()).toContain('Asking Gemini');
+    type('category', 'travel'); // the user decides first
+    answer.next('transport'); // a late answer is ignored
+    await fixture.whenStable();
+    expect(value('category')).toBe('travel');
+    expect(hint()).not.toContain('Suggested by AI');
+  });
+
+  it('lets the user override the suggestion and saves what they typed', async () => {
+    const add = vi.fn(() =>
+      of({ id: 1, amount: 32.5, category: 'travel', description: 'Uber', date: today() }),
+    );
+    const { type, leave, hint, submit } = await render(add, () => of('transport'));
+    type('description', 'Uber');
+    await leave('description');
+    type('category', 'travel');
+    type('amount', '32.5');
+    await submit();
+    expect(hint()).not.toContain('Suggested by AI');
+    expect(add).toHaveBeenCalledWith(expect.objectContaining({ category: 'travel' }));
+  });
+
+  it('falls back to picking by hand when AI is not available', async () => {
+    const unavailable = () =>
+      throwError(
+        () =>
+          new HttpErrorResponse({ status: 503, error: { detail: 'GEMINI_API_KEY is not set.' } }),
+      );
+    const { type, leave, value, hint, submit, page } = await render(vi.fn(), unavailable);
+    type('description', 'Uber');
+    await leave('description');
+    expect(hint()).toBe('No AI suggestion: GEMINI_API_KEY is not set. Please pick a category.');
+    expect(value('category')).toBe('');
+    await submit();
+    expect(page.textContent).toContain('Please choose or type a category.');
+  });
+
+  it('"Suggest again" asks once more', async () => {
+    const suggest = vi.fn().mockReturnValueOnce(of('other')).mockReturnValueOnce(of('food'));
+    const { type, leave, value, page, fixture } = await render(vi.fn(), suggest);
+    type('description', 'Groceries');
+    await leave('description');
+    expect(value('category')).toBe('other');
+    const again = page.querySelector<HTMLButtonElement>('button.suggest')!;
+    expect(again.textContent).toContain('Suggest again');
+    again.click();
+    await fixture.whenStable();
+    expect(suggest).toHaveBeenCalledTimes(2);
+    expect(value('category')).toBe('food');
   });
 });
