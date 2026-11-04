@@ -1,0 +1,67 @@
+:host {
+  display: block;
+  padding-top: 2rem;
+}
+
+.card {
+  max-width: 24rem;
+  margin: 0 auto;
+  padding: 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.form {
+  display: grid;
+  gap: 1rem;
+}
+
+.form .error,
+.notice {
+  margin: 0 0 1rem;
+}
+
+.form .error {
+  margin: 0;
+}
+
+.notice {
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.field {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.field > span {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.field input {
+  width: 100%;
+  background: var(--bg);
+}
+
+.hint {
+  color: var(--muted);
+}
+
+.field-error {
+  color: var(--danger);
+}
+
+.primary {
+  width: 100%;
+}
+
+.switch {
+  margin: 1rem 0 0;
+  text-align: center;
+  color: var(--muted);
+}

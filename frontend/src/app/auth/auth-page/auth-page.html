@@ -1,0 +1,60 @@
+<div class="card">
+  <h1>{{ signingUp() ? 'Create an account' : 'Log in' }}</h1>
+
+  @if (auth.notice()) {
+    <p class="notice" role="status">{{ auth.notice() }}</p>
+  }
+
+  <form class="form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    @if (error()) {
+      <p class="error" role="alert">{{ error() }}</p>
+    }
+
+    <label class="field">
+      <span>Email</span>
+      <input formControlName="email" type="email" autocomplete="email" />
+      @if (showError('email')) {
+        <small class="field-error">Please enter your email address.</small>
+      }
+    </label>
+
+    <label class="field">
+      <span>Password</span>
+      <input
+        formControlName="password"
+        type="password"
+        [attr.autocomplete]="signingUp() ? 'new-password' : 'current-password'"
+      />
+      @if (signingUp()) {
+        <small class="hint">At least {{ minPasswordLength }} characters.</small>
+      }
+      @if (showError('password')) {
+        <small class="field-error">
+          {{
+            form.controls.password.hasError('minlength')
+              ? 'The password needs at least ' + minPasswordLength + ' characters.'
+              : 'Please enter your password.'
+          }}
+        </small>
+      }
+    </label>
+
+    <button type="submit" class="primary" [disabled]="busy()">
+      @if (busy()) {
+        {{ signingUp() ? 'Creating…' : 'Logging in…' }}
+      } @else {
+        {{ signingUp() ? 'Create account' : 'Log in' }}
+      }
+    </button>
+  </form>
+
+  <p class="switch">
+    @if (signingUp()) {
+      Already have an account?
+      <a routerLink="/login" [queryParams]="{ returnUrl: returnUrl() }">Log in</a>
+    } @else {
+      New here?
+      <a routerLink="/signup" [queryParams]="{ returnUrl: returnUrl() }">Create an account</a>
+    }
+  </p>
+</div>
