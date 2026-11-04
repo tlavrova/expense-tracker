@@ -51,7 +51,8 @@ class Expense:
             raise TypeError(f"Date must be a date or a YYYY-MM-DD string, got {self.date!r}.")
         if not self.description.strip():
             raise ValueError("Description must not be empty.")
-        if not self.category.strip():
+        self.category = self.category.strip().lower()  # "Food" and "food" are the same category
+        if not self.category:
             raise ValueError("Category must not be empty.")
 
     def __str__(self) -> str:
@@ -119,13 +120,18 @@ class ExpenseTracker:
     def categories(self) -> set[str]:
         return {expense.category for expense in self.expenses}
 
-    def sorted_by(self, key: str) -> list[Expense]:
-        """Return a new list sorted by "amount" (largest first) or "date" (oldest first)."""
+    def sorted_by(self, key: str | None = None) -> list[Expense]:
+        """Return a new list sorted by "amount" (largest first) or "date" (oldest first).
+
+        None keeps the order they were entered in; any other key raises ValueError.
+        """
+        if key is None:
+            return list(self.expenses)
         if key == "amount":
             return sorted(self.expenses, key=lambda expense: expense.amount, reverse=True)
         if key == "date":
             return sorted(self.expenses, key=lambda expense: expense.date)
-        return list(self.expenses)
+        raise ValueError(f'Sort key must be "amount" or "date", got {key!r}.')
 
     def filter_by_category(self, category: str) -> list[Expense]:
         category = category.strip().lower()
