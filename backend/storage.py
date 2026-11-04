@@ -14,8 +14,10 @@ from __future__ import annotations
 import functools
 import json
 import os
+from contextlib import contextmanager
 from datetime import date as Date
 from pathlib import Path
+from typing import Iterator
 
 from sqlalchemy import Engine, extract
 from sqlalchemy.exc import SQLAlchemyError
@@ -88,43 +90,49 @@ def expense_from_row(row: ExpenseRow) -> Expense:
     return Expense(row.amount, row.category, row.description, row.date, id=row.id)
 
 
+@contextmanager
+def _session(action: str, engine: Engine | None = None) -> Iterator[Session]:
+    """A database session; any database error becomes StorageError("Can't <action>: ...").
+
+    ValueError counts too: it means a row holds data the models reject.
+    """
+    try:
+        with Session(engine or get_engine()) as session:
+            yield session
+    except (SQLAlchemyError, ValueError) as error:
+        raise StorageError(f"Can't {action}: {_short(error)}") from error
+
+
+def _short(error: Exception) -> str:
+    """First line only: SQLAlchemy adds the SQL and its values below it (the log keeps it all)."""
+    return str(error).splitlines()[0]
+
+
 def load(engine: Engine | None = None) -> ExpenseTracker:
     """All expenses, in the order they were added."""
-    engine = engine or get_engine()
-    try:
-        with Session(engine) as session:
-            rows = session.exec(select(ExpenseRow).order_by(ExpenseRow.id)).all()
-            return ExpenseTracker([expense_from_row(row) for row in rows])
-    except (SQLAlchemyError, TypeError, ValueError) as error:
-        raise StorageError(f"Can't read the expenses: {_short(error)}") from error
+    with _session("read the expenses", engine) as session:
+        rows = session.exec(select(ExpenseRow).order_by(ExpenseRow.id)).all()
+        return ExpenseTracker([expense_from_row(row) for row in rows])
 
 
 def add(expense: Expense, engine: Engine | None = None) -> Expense:
     """Insert one expense and set its new id on it."""
-    engine = engine or get_engine()
-    try:
-        with Session(engine) as session:
-            row = row_from_expense(expense)
-            session.add(row)
-            session.commit()
-            expense.id = row.id
-    except SQLAlchemyError as error:
-        raise StorageError(f"Can't save the expense: {_short(error)}") from error
+    with _session("save the expense", engine) as session:
+        row = row_from_expense(expense)
+        session.add(row)
+        session.commit()
+        expense.id = row.id
     return expense
 
 
 def delete(expense_id: int, engine: Engine | None = None) -> bool:
     """Delete one expense by id. Returns False if there was no such expense."""
-    engine = engine or get_engine()
-    try:
-        with Session(engine) as session:
-            row = session.get(ExpenseRow, expense_id)
-            if row is None:
-                return False
-            session.delete(row)
-            session.commit()
-    except SQLAlchemyError as error:
-        raise StorageError(f"Can't delete the expense: {_short(error)}") from error
+    with _session("delete the expense", engine) as session:
+        row = session.get(ExpenseRow, expense_id)
+        if row is None:
+            return False
+        session.delete(row)
+        session.commit()
     return True
 
 
@@ -135,7 +143,8 @@ def totals_by_category(engine: Engine | None = None) -> dict[str, float]:
         .group_by(ExpenseRow.category)
         .order_by(ExpenseRow.category)
     )
-    return {category: total for category, total in _run(statement, engine)}
+    with _session("read the totals", engine) as session:
+        return {category: total for category, total in session.exec(statement)}
 
 
 def totals_by_month(engine: Engine | None = None) -> dict[str, float]:
@@ -147,20 +156,8 @@ def totals_by_month(engine: Engine | None = None) -> dict[str, float]:
         .group_by(year, month)
         .order_by(year, month)
     )
-    return {f"{int(y):04d}-{int(m):02d}": total for y, m, total in _run(statement, engine)}
-
-
-def _run(statement, engine: Engine | None) -> list:
-    try:
-        with Session(engine or get_engine()) as session:
-            return list(session.exec(statement).all())
-    except SQLAlchemyError as error:
-        raise StorageError(f"Can't read the totals: {_short(error)}") from error
-
-
-def _short(error: Exception) -> str:
-    """First line only: SQLAlchemy adds the SQL and its values below it (the log keeps it all)."""
-    return str(error).splitlines()[0]
+    with _session("read the totals", engine) as session:
+        return {f"{int(y):04d}-{int(m):02d}": total for y, m, total in session.exec(statement)}
 
 
 def import_json(path: Path = JSON_PATH, engine: Engine | None = None) -> int:
@@ -180,12 +177,8 @@ def import_json(path: Path = JSON_PATH, engine: Engine | None = None) -> int:
     except (OSError, json.JSONDecodeError, TypeError, ValueError) as error:
         raise StorageError(f"Can't read {path}: {error}") from error
 
-    engine = engine or get_engine()
-    try:
-        with Session(engine) as session:
-            session.add_all(row_from_expense(expense) for expense in expenses)
-            session.commit()
-    except SQLAlchemyError as error:
-        raise StorageError(f"Can't import {path}: {_short(error)}") from error
+    with _session(f"import {path}", engine) as session:
+        session.add_all(row_from_expense(expense) for expense in expenses)
+        session.commit()
     path.rename(path.with_name(path.name + ".imported"))
     return len(expenses)
