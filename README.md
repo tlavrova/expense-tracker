@@ -92,18 +92,21 @@ source .venv/bin/activate
 python main.py
 ```
 
-Frontend only, with mock data (stage 10a):
+Web app, in two terminals (the frontend reads and saves everything through the API, so start
+both):
 
 ```bash
+cd backend && source .venv/bin/activate && uvicorn api:app --reload   # API on http://localhost:8000 (docs at /docs)
 cd frontend && npm start                 # UI on http://localhost:4200
-cd frontend && npm test                  # unit tests (Vitest)
 ```
 
-Web app (stages 9–11), in two terminals:
+The API only accepts calls from `http://localhost:4200`, so keep the frontend on that port.
+Where the frontend looks for the API is set in `frontend/src/environments/environment.ts`.
+
+Frontend tests (Vitest; they use fake data, so the API doesn't need to run):
 
 ```bash
-cd backend && uvicorn api:app --reload   # API on http://localhost:8000 (docs at /docs)
-cd frontend && npm start                 # UI on http://localhost:4200
+cd frontend && npm test
 ```
 
 ## API
@@ -134,7 +137,7 @@ Errors always look like `{"detail": "a readable message"}` (`422` for invalid in
 - [x] **8a. Database storage** — `storage.py` switches from JSON to a database through SQLModel: SQLite (`expenses.db`) on your Mac, Postgres online, chosen by `DATABASE_URL`; one row per expense with an `id`, `GROUP BY` for totals; delete from the menu; one-time import of `expenses.json`
 - [x] **9. REST API** — FastAPI app in `api.py` reusing `ExpenseTracker` and `storage`: list, add, delete, summary, filter, and suggest-category endpoints; CORS for the Angular dev server
 - [x] **10a. Angular shell (mock data)** — can start right after stage 4: Angular app in `frontend/` with routing and layout; `Expense` interface; `ExpenseService` returning mock data; list page with total
-- [ ] **10. Angular: list and add** — switch `ExpenseService` to `HttpClient` against the API; add form with validation
+- [x] **10. Angular: list and add** — switch `ExpenseService` to `HttpClient` against the API; add form with validation
 - [ ] **11. Angular: summary, filter and AI** — totals per category, filter by category and month, sort; AI suggestion in the add form (accept or override, manual fallback)
 - [ ] **12. Login** — sign-up and login (hashed passwords, token) in FastAPI; each expense belongs to a user; Angular login page, interceptor and route guard
 - [ ] **13. Deploy** — Angular on GitHub Pages (GitHub Actions), FastAPI on a free host, free hosted Postgres, Gemini key as a host secret; the site works from any device
@@ -156,15 +159,17 @@ expense-tracker/
 │   ├── expenses.log     # action log from @log_action (git-ignored)
 │   └── requirements.txt # google-genai, fastapi, uvicorn, sqlmodel
 ├── frontend/            # Angular 22 app
-│   └── src/app/
-│       ├── expense.model.ts    # Expense, NewExpense, Summary types
-│       ├── expense.service.ts  # the only data source (mock now, HttpClient from stage 10)
-│       ├── mock-expenses.ts    # sample data until the API exists
-│       ├── app.ts / app.html   # layout: header + navigation
-│       ├── app.routes.ts       # /expenses, /expenses/new, /summary
-│       ├── expense-list/       # list page with total
-│       ├── add-expense/        # placeholder until stage 10
-│       └── summary/            # placeholder until stage 11
+│   └── src/
+│       ├── environments/environment.ts  # apiUrl: where the API runs
+│       └── app/
+│           ├── expense.model.ts    # Expense, NewExpense, Summary types; CATEGORIES, FREQUENCIES
+│           ├── expense.service.ts  # the only data source: HttpClient calls to the API
+│           ├── api-error.ts        # turns a failed API call into a sentence for the page
+│           ├── app.ts / app.html   # layout: header + navigation
+│           ├── app.routes.ts       # /expenses, /expenses/new, /summary
+│           ├── expense-list/       # list page with total and delete
+│           ├── add-expense/        # add form with validation
+│           └── summary/            # placeholder until stage 11
 └── README.md
 ```
 

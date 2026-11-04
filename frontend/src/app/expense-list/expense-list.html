@@ -1,6 +1,18 @@
 <h1>Expenses</h1>
 
-@if (expenses().length) {
+@if (error()) {
+  <p class="error" role="alert">
+    {{ error() }}
+    <button type="button" class="link" (click)="load()">Try again</button>
+  </p>
+}
+
+@let list = expenses();
+@if (list === null) {
+  @if (!error()) {
+    <p class="muted">Loading…</p>
+  }
+} @else if (list.length) {
   <table class="table">
     <thead>
       <tr>
@@ -8,10 +20,11 @@
         <th scope="col">Description</th>
         <th scope="col">Category</th>
         <th scope="col" class="amount">Amount</th>
+        <th scope="col"><span class="visually-hidden">Actions</span></th>
       </tr>
     </thead>
     <tbody>
-      @for (expense of expenses(); track expense.id) {
+      @for (expense of list; track expense.id) {
         <tr>
           <td>{{ expense.date | date: 'mediumDate' }}</td>
           <td>
@@ -22,6 +35,17 @@
           </td>
           <td>{{ expense.category }}</td>
           <td class="amount">{{ expense.amount | number: '1.2-2' }}</td>
+          <td class="actions">
+            <button
+              type="button"
+              class="delete"
+              [disabled]="deleting() === expense.id"
+              [attr.aria-label]="'Delete ' + expense.description"
+              (click)="delete(expense)"
+            >
+              {{ deleting() === expense.id ? 'Deleting…' : 'Delete' }}
+            </button>
+          </td>
         </tr>
       }
     </tbody>
@@ -29,9 +53,10 @@
       <tr>
         <th scope="row" colspan="3">Total spent</th>
         <td class="amount total">{{ total() | number: '1.2-2' }}</td>
+        <td></td>
       </tr>
     </tfoot>
   </table>
 } @else {
-  <p class="empty">No expenses yet.</p>
+  <p class="muted">No expenses yet. <a routerLink="/expenses/new">Add the first one</a>.</p>
 }
