@@ -58,7 +58,7 @@ def add_expense(tracker: ExpenseTracker) -> None:
         expense = RecurringExpense(amount, category, description, when, frequency)
     else:
         expense = Expense(amount, category, description, when)
-    storage.add(expense)  # save first, so the tracker only holds what is in the database
+    storage.add(expense, owner=storage.LOCAL)  # save first, so the tracker only holds what is in the database
     tracker.add(expense)
     print("✅ Saved.")
 
@@ -108,7 +108,7 @@ def show_all(tracker: ExpenseTracker) -> None:
 def show_summary(tracker: ExpenseTracker) -> None:
     """Print totals per category, the overall total and the unique categories."""
     print("Totals per category:")
-    for category, total in storage.totals_by_category().items():
+    for category, total in storage.totals_by_category(owner=storage.LOCAL).items():
         print(f"  {category}: {total:.2f}")
     print(f"Total spent: {tracker.total():.2f}")
     categories = sorted(tracker.categories())
@@ -142,7 +142,7 @@ def show_statistics(tracker: ExpenseTracker) -> None:
     for category, count in tracker.count_by_category().most_common():
         print(f"  {category}: {count}")
     print("Totals per month:")
-    for month, total in storage.totals_by_month().items():
+    for month, total in storage.totals_by_month(owner=storage.LOCAL).items():
         print(f"  {month}: {total:.2f}")
 
 
@@ -161,7 +161,7 @@ def delete_expense(tracker: ExpenseTracker) -> None:
         print("Cancelled.")
         return
     assert expense.id is not None  # everything in the tracker came from the database
-    if storage.delete(expense.id):
+    if storage.delete(expense.id, owner=storage.LOCAL):
         print("🗑️  Deleted.")
     else:
         print("⚠️  It was already gone.")

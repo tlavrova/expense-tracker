@@ -1,4 +1,8 @@
-"""The expense endpoints: list, add, delete, summary and the AI category suggestion."""
+"""The expense endpoints: list, add, delete, summary and the AI category suggestion.
+
+Every endpoint needs a logged-in user (security.CurrentUser) and only sees that user's own
+expenses: another account's expense id answers 404, as if it didn't exist.
+"""
 
 from __future__ import annotations
 
@@ -9,10 +13,11 @@ from fastapi import APIRouter, HTTPException, Query, Response, status
 
 import ai_helper
 import storage
-from models import Expense, ExpenseTracker, RecurringExpense
+from models import Expense, RecurringExpense
 from schemas import ExpenseOut, NewExpense, Suggestion, SuggestionRequest, Summary
+from security import CurrentUser
 
-router = APIRouter()
+router = APIRouter(tags=["expenses"])
 
 
 def to_out(expense: Expense) -> ExpenseOut:
@@ -29,14 +34,13 @@ def to_out(expense: Expense) -> ExpenseOut:
 
 @router.get("/expenses", response_model=list[ExpenseOut], response_model_exclude_none=True)
 def list_expenses(
+    user: CurrentUser,
     category: str | None = None,
     month: str | None = Query(None, description="YYYY-MM", examples=["2026-11"]),
     sort: Literal["amount", "date"] | None = None,
 ) -> list[ExpenseOut]:
-    """All expenses in the order added; optionally only one category and/or month, and sorted."""
-    tracker = storage.load()
-    if category:
-        tracker = ExpenseTracker(tracker.filter_by_category(category))
+    """Your expenses in the order added; optionally only one category and/or month, and sorted."""
+    year_month = None
     if month:
         try:
             first_day = datetime.datetime.strptime(month, "%Y-%m")
@@ -44,8 +48,9 @@ def list_expenses(
             raise HTTPException(
                 status.HTTP_422_UNPROCESSABLE_CONTENT, "month must be YYYY-MM, for example 2026-11."
             ) from None
-        tracker = ExpenseTracker(list(tracker.expenses_in_month(first_day.year, first_day.month)))
-    return [to_out(expense) for expense in tracker.sorted_by(sort)]
+        year_month = (first_day.year, first_day.month)
+    expenses = storage.list_expenses(owner=user.id, category=category, year_month=year_month, sort=sort)
+    return [to_out(expense) for expense in expenses]
 
 
 @router.post(
@@ -54,7 +59,7 @@ def list_expenses(
     response_model=ExpenseOut,
     response_model_exclude_none=True,
 )
-def add_expense(new: NewExpense) -> ExpenseOut:
+def add_expense(new: NewExpense, user: CurrentUser) -> ExpenseOut:
     """Save an expense. The same rules as the CLI apply; breaking one gives 422 with the reason."""
     try:
         if new.frequency:
@@ -65,26 +70,29 @@ def add_expense(new: NewExpense) -> ExpenseOut:
             expense = Expense(new.amount, new.category, new.description, new.date)
     except ValueError as error:  # InvalidAmountError is a ValueError too
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from None
-    return to_out(storage.add(expense))
+    return to_out(storage.add(expense, owner=user.id))
 
 
 @router.delete("/expenses/{expense_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_expense(expense_id: int) -> Response:
-    if not storage.delete(expense_id):
+def delete_expense(expense_id: int, user: CurrentUser) -> Response:
+    if not storage.delete(expense_id, owner=user.id):
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"No expense with id {expense_id}.")
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/summary", response_model=Summary, response_model_by_alias=True)
-def summary() -> Summary:
-    """Totals per category (added up by the database) and the overall total."""
-    totals = storage.totals_by_category()
+def summary(user: CurrentUser) -> Summary:
+    """Your totals per category (added up by the database) and the overall total."""
+    totals = storage.totals_by_category(owner=user.id)
     return Summary(totals_by_category=totals, total=sum(totals.values()))
 
 
 @router.post("/suggest-category", response_model=Suggestion)
-def suggest_category(request: SuggestionRequest) -> Suggestion:
-    """Gemini's category for a description; 503 with the reason when the AI isn't available."""
+def suggest_category(request: SuggestionRequest, user: CurrentUser) -> Suggestion:
+    """Gemini's category for a description; 503 with the reason when the AI isn't available.
+
+    Login is required here too, so strangers can't use up the Gemini free-tier quota.
+    """
     try:
         return Suggestion(category=ai_helper.suggest_category(request.description))
     except ai_helper.AIUnavailableError as error:

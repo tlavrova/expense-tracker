@@ -5,6 +5,9 @@ Run it from backend/:  uvicorn api:app --reload   (docs at http://localhost:8000
 This file creates the app and sets up what every endpoint shares: CORS, the startup step and
 the error format. The endpoints live in routers/, the JSON shapes in schemas.py.
 
+Login (stage 12): routers/auth.py signs up and logs in; every expense endpoint needs the token
+it returns and sees only that user's expenses. JWT_SECRET must be set, or the API won't start.
+
 Every request reads the database through storage.py; nothing is kept in memory between
 requests. The amount, date and frequency rules live in models.py, so the API and the CLI accept
 exactly the same expenses. The Gemini key stays here on the server and never reaches the browser.
@@ -22,8 +25,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 import json_import
+import security
 import storage
-from routers import expenses
+from routers import auth, expenses
 
 # Where the Angular dev server runs (npm start). The deployed site is added in stage 13.
 ALLOWED_ORIGINS = ["http://localhost:4200"]
@@ -31,6 +35,7 @@ ALLOWED_ORIGINS = ["http://localhost:4200"]
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    security.jwt_secret()  # stop right away with a clear message if JWT_SECRET is missing
     json_import.import_json()  # the same one-time move of expenses.json as the CLI; opens the database
     yield
 
@@ -40,7 +45,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
     allow_methods=["GET", "POST", "DELETE"],
-    allow_headers=["Content-Type"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 
@@ -56,4 +61,5 @@ def validation_error(request: Request, error: RequestValidationError) -> JSONRes
     return JSONResponse(status_code=422, content={"detail": "; ".join(messages)})
 
 
+app.include_router(auth.router)
 app.include_router(expenses.router)
