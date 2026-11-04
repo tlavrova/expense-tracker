@@ -12,12 +12,16 @@ website (stages 12–13).
 
 ```
 === Expense Tracker ===
-1) Add expense   2) Show all   3) Summary   4) Filter   5) Quit
+1) Add expense   2) Show all   3) Summary   4) Filter
+5) Month   6) Statistics   7) Quit
 > 1
 Description: Uber to airport
 Amount: 32.50
 Category (leave empty for AI suggestion):
-🤖 Suggested: transport — accept? (y/n): y
+🤖 Asking Gemini… (Ctrl+C to skip)
+🤖 Suggested: transport — accept? (Y/n): y
+Date (YYYY-MM-DD, empty for today):
+Repeats (weekly/monthly/yearly, empty if not):
 ✅ Saved.
 ```
 
@@ -28,7 +32,7 @@ supported):
 
 ```bash
 cd backend
-python3 -m venv .venv
+python3.12 -m venv .venv      # any Python 3.10+; the virtual environment is git-ignored
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
@@ -49,11 +53,16 @@ Gemini, so the key never reaches the browser.
 
 ```bash
 export GEMINI_API_KEY=...
-export GEMINI_MODEL=...   # optional: which free-tier model to use (the app has a default)
+export GEMINI_MODEL=...   # optional, default gemini-3.5-flash
 ```
 
+To keep the key between terminal sessions, add the `export GEMINI_API_KEY=...` line to
+`~/.zshrc` (outside the project, so it can never be committed). Online (stage 13), the key goes
+into the hosting service's environment settings instead; the code reads it the same way.
+
 Without a key, without internet, or when the free-tier limit is reached, the app falls back to
-picking the category by hand.
+picking the category by hand. Free-tier answers usually take 1–10 seconds; Ctrl+C skips the
+suggestion. The free tier also has a per-minute limit, so many suggestions in a row can hit it.
 
 On the free tier, Google may use what is sent (the expense descriptions) to improve its
 products, so don't put anything private in descriptions.
@@ -64,7 +73,8 @@ Command-line app (stages 1–8):
 
 ```bash
 cd backend
-python3 main.py
+source .venv/bin/activate
+python main.py
 ```
 
 Frontend only, with mock data (stage 10a):
@@ -90,7 +100,7 @@ cd frontend && npm start                 # UI on http://localhost:4200
 - [x] **5. Errors and exceptions** — bad input never crashes; custom `InvalidAmountError` for zero or negative amounts
 - [x] **6. Files and modules** — auto save/load `expenses.json` in `storage.py`; input helpers in `prompts.py`; `main.py` only has the screens and the menu
 - [x] **7. Advanced Python** — `@log_action` decorator; generator for a chosen month; `datetime`, `defaultdict`/`Counter` for stats
-- [ ] **8. AI auto-categorization** — `ai_helper.suggest_category(description: str) -> str` with the Gemini API free tier via the `google-genai` package; key in `GEMINI_API_KEY`; only food, transport, housing, entertainment, shopping, health or other (anything else becomes other); accept or override; falls back to manual on errors and rate limits
+- [x] **8. AI auto-categorization** — `ai_helper.suggest_category(description: str) -> str` with the Gemini API free tier via the `google-genai` package; key in `GEMINI_API_KEY`; only food, transport, housing, entertainment, shopping, health or other (anything else becomes other); accept or override; falls back to manual on errors and rate limits
 - [ ] **8a. Database storage** — `storage.py` switches from JSON to a database through SQLModel: SQLite (`expenses.db`) on your Mac, Postgres online, chosen by `DATABASE_URL`; one row per expense with an `id`, `GROUP BY` for totals; delete from the menu; one-time import of `expenses.json`
 - [ ] **9. REST API** — FastAPI app in `api.py` reusing `ExpenseTracker` and `storage`: list, add, delete, summary, filter, and suggest-category endpoints; CORS for the Angular dev server
 - [x] **10a. Angular shell (mock data)** — can start right after stage 4: Angular app in `frontend/` with routing and layout; `Expense` interface; `ExpenseService` returning mock data; list page with total

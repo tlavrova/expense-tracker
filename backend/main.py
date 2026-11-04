@@ -36,10 +36,11 @@ def print_menu() -> None:
 def main() -> None:
     logging.basicConfig(
         filename=LOG_PATH,
-        level=logging.INFO,
+        level=logging.WARNING,  # other libraries (Gemini SDK, HTTP client): warnings only
         format="%(asctime)s %(levelname)s %(message)s",
         encoding="utf-8",
     )
+    logging.getLogger("expense_tracker").setLevel(logging.INFO)  # our own actions in full
     try:
         tracker = storage.load()
     except storage.StorageError as error:

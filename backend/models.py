@@ -13,6 +13,9 @@ from typing import Iterator
 
 FREQUENCIES = ("weekly", "monthly", "yearly")
 
+# The categories the AI may suggest (stage 8). People can still type their own.
+CATEGORIES = ("food", "transport", "housing", "entertainment", "shopping", "health", "other")
+
 
 class InvalidAmountError(ValueError):
     """Raised when an amount is zero, negative or not a real number."""
