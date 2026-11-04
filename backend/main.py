@@ -9,6 +9,7 @@ import logging
 import sys
 from pathlib import Path
 
+import json_import
 import screens
 import storage
 
@@ -43,7 +44,7 @@ def main() -> None:
     )
     logging.getLogger("expense_tracker").setLevel(logging.INFO)  # our own actions in full
     try:
-        imported = storage.import_json()  # once: the expenses.json used before stage 8a
+        imported = json_import.import_json()  # once: the expenses.json used before stage 8a
         tracker = storage.load()
     except storage.StorageError as error:
         logging.getLogger("expense_tracker").error("%s", error)

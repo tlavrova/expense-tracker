@@ -3,8 +3,9 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, ParamMap, Router, RouterLink } from '@angular/router';
 import { BehaviorSubject, EMPTY, catchError, combineLatest, map, switchMap, tap } from 'rxjs';
-import { apiErrorMessage } from '../api-error';
-import { CATEGORIES, Expense, ExpenseFilters, SORT_KEYS, SortKey } from '../expense.model';
+import { apiErrorMessage } from '../../core/api-error';
+import { ExpenseFilterBar } from '../expense-filter-bar/expense-filter-bar';
+import { Expense, ExpenseFilters, SORT_KEYS, SortKey } from '../expense.model';
 import { ExpenseService } from '../expense.service';
 
 /** The filters from the page address (?category=food&month=2026-11&sort=amount); bad values are ignored. */
@@ -26,7 +27,7 @@ export function filtersFrom(params: ParamMap): ExpenseFilters {
 }
 
 @Component({
-  imports: [DatePipe, DecimalPipe, RouterLink],
+  imports: [DatePipe, DecimalPipe, RouterLink, ExpenseFilterBar],
   selector: 'app-expense-list',
   styleUrl: './expense-list.css',
   templateUrl: './expense-list.html',
@@ -37,7 +38,6 @@ export class ExpenseList {
   private readonly router = inject(Router);
   private readonly reload$ = new BehaviorSubject<void>(undefined);
 
-  protected readonly categories = CATEGORIES;
   protected readonly filters = signal<ExpenseFilters>({});
   /** Category or month narrows the list; sorting alone doesn't. */
   protected readonly filtered = computed(() => !!(this.filters().category || this.filters().month));

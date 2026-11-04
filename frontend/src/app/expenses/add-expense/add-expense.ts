@@ -10,7 +10,7 @@ import {
 } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { apiErrorMessage } from '../api-error';
+import { apiErrorMessage } from '../../core/api-error';
 import { CATEGORIES, FREQUENCIES, Frequency, NewExpense } from '../expense.model';
 import { ExpenseService } from '../expense.service';
 
