@@ -2,7 +2,7 @@
  * Helpers for the tests only (nothing in the app imports this file, so it isn't in the build).
  */
 
-const STORAGE_KEY = 'expense-tracker.token';
+import { clearToken, readToken, saveToken } from './token';
 
 function base64url(value: object): string {
   return btoa(JSON.stringify(value)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -17,12 +17,12 @@ export function fakeToken(expiresInSeconds = 3600): string {
 /** Pretend an earlier visit left a token behind (read when AuthService is created). */
 export function storeToken(token: string | null): void {
   if (token) {
-    localStorage.setItem(STORAGE_KEY, token);
+    saveToken(token);
   } else {
-    localStorage.removeItem(STORAGE_KEY);
+    clearToken();
   }
 }
 
 export function storedToken(): string | null {
-  return localStorage.getItem(STORAGE_KEY);
+  return readToken();
 }

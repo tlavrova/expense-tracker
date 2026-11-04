@@ -207,7 +207,8 @@ expense-tracker/
 │           ├── app.ts / app.html   # layout: header + navigation
 │           ├── app.routes.ts       # /login, /signup; /expenses, /expenses/new, /summary need a login
 │           ├── auth/
-│           │   ├── auth.service.ts # the token (kept in localStorage), log in, sign up, log out
+│           │   ├── auth.service.ts # who is logged in; log in, sign up, log out
+│           │   ├── token.ts        # keeping the token between visits (localStorage), reading its expiry
 │           │   ├── auth.guards.ts  # logged out → login page (and back afterwards); logged in → past it
 │           │   └── auth-page/      # the login and sign-up page (one form, two modes)
 │           ├── core/

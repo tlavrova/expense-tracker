@@ -4,7 +4,8 @@ import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { AuthService, tokenExpiry } from './auth.service';
+import { AuthService } from './auth.service';
+import { tokenExpiry } from './token';
 import { fakeToken, storeToken, storedToken } from './testing';
 
 const api = environment.apiUrl;

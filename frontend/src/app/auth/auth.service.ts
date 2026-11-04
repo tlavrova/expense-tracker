@@ -3,6 +3,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, map, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { clearToken, readToken, saveToken, tokenExpiry } from './token';
 
 /** What /auth/signup and /auth/login answer (backend/schemas.py Token). */
 interface TokenAnswer {
@@ -10,33 +11,11 @@ interface TokenAnswer {
   token_type: string;
 }
 
-/** Where the token is kept between visits; it is never put in a URL or logged. */
-const STORAGE_KEY = 'expense-tracker.token';
-
-/** The seconds-since-1970 expiry inside a JWT, or 0 if it can't be read. */
-export function tokenExpiry(token: string): number {
-  try {
-    const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    const claims = JSON.parse(atob(payload)) as { exp?: unknown };
-    return typeof claims.exp === 'number' ? claims.exp : 0;
-  } catch {
-    return 0;
-  }
-}
-
-function readStoredToken(): string | null {
-  try {
-    return localStorage.getItem(STORAGE_KEY);
-  } catch {
-    return null; // storage blocked (private mode, settings): just not remembered
-  }
-}
-
 /**
  * Who is logged in, and logging in and out.
  *
- * The token from the API is kept in localStorage, so a reload keeps you logged in until it
- * expires (7 days, set by the backend). The API checks the token on every call; the expiry read
+ * The token from the API is kept between visits (token.ts), so a reload keeps you logged in
+ * until it expires (7 days, set by the backend). The API checks the token on every call; the expiry read
  * here only decides early that a stored token is too old to try.
  */
 @Injectable({ providedIn: 'root' })
@@ -45,7 +24,7 @@ export class AuthService {
   private readonly router = inject(Router);
   private readonly url = `${environment.apiUrl}/auth`;
 
-  private readonly storedToken = signal(readStoredToken());
+  private readonly storedToken = signal(readToken());
   /** The email of the logged-in user, once /auth/me has answered. */
   readonly email = signal('');
   /** Why the user is on the login page, for example after the login expired. */
@@ -85,11 +64,7 @@ export class AuthService {
     this.storedToken.set(null);
     this.email.set('');
     this.notice.set(notice);
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-    } catch {
-      // nothing stored, nothing to remove
-    }
+    clearToken();
     const here = this.router.url;
     // After an expiry, come back here (but never "back" to the login page itself).
     const returnUrl = notice && !here.startsWith('/login') ? here : undefined;
@@ -99,11 +74,7 @@ export class AuthService {
   private keep(token: string): void {
     this.storedToken.set(token);
     this.notice.set('');
-    try {
-      localStorage.setItem(STORAGE_KEY, token);
-    } catch {
-      // can't remember it: logged in until the page is closed
-    }
+    saveToken(token);
     this.loadEmail();
   }
 
