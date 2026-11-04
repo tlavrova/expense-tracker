@@ -106,6 +106,21 @@ cd backend && uvicorn api:app --reload   # API on http://localhost:8000 (docs at
 cd frontend && npm start                 # UI on http://localhost:4200
 ```
 
+## API
+
+FastAPI in `backend/api.py`; start it with `uvicorn api:app --reload` and try every endpoint at
+http://localhost:8000/docs. It uses the same database and rules as the command-line app.
+
+| Request | Does | Answer |
+|---|---|---|
+| `GET /expenses` | all expenses; optional `?category=food`, `?month=2026-11`, `?sort=amount` or `date` | list |
+| `POST /expenses` | add one (amount, category, description, date, optional frequency) | `201` + the saved expense with its `id` |
+| `DELETE /expenses/{id}` | delete one | `204`, or `404` |
+| `GET /summary` | totals per category and overall | `{"totalsByCategory": {...}, "total": ...}` |
+| `POST /suggest-category` | `{"description": "..."}` → Gemini's category | `{"category": "..."}`, or `503` when AI isn't available |
+
+Errors always look like `{"detail": "a readable message"}` (`422` for invalid input).
+
 ## Stages
 
 - [x] **1. Basics** — menu loop (add, show, quit); amount, category and description in a list; total spent
@@ -117,7 +132,7 @@ cd frontend && npm start                 # UI on http://localhost:4200
 - [x] **7. Advanced Python** — `@log_action` decorator; generator for a chosen month; `datetime`, `defaultdict`/`Counter` for stats
 - [x] **8. AI auto-categorization** — `ai_helper.suggest_category(description: str) -> str` with the Gemini API free tier via the `google-genai` package; key in `GEMINI_API_KEY`; only food, transport, housing, entertainment, shopping, health or other (anything else becomes other); accept or override; falls back to manual on errors and rate limits
 - [x] **8a. Database storage** — `storage.py` switches from JSON to a database through SQLModel: SQLite (`expenses.db`) on your Mac, Postgres online, chosen by `DATABASE_URL`; one row per expense with an `id`, `GROUP BY` for totals; delete from the menu; one-time import of `expenses.json`
-- [ ] **9. REST API** — FastAPI app in `api.py` reusing `ExpenseTracker` and `storage`: list, add, delete, summary, filter, and suggest-category endpoints; CORS for the Angular dev server
+- [x] **9. REST API** — FastAPI app in `api.py` reusing `ExpenseTracker` and `storage`: list, add, delete, summary, filter, and suggest-category endpoints; CORS for the Angular dev server
 - [x] **10a. Angular shell (mock data)** — can start right after stage 4: Angular app in `frontend/` with routing and layout; `Expense` interface; `ExpenseService` returning mock data; list page with total
 - [ ] **10. Angular: list and add** — switch `ExpenseService` to `HttpClient` against the API; add form with validation
 - [ ] **11. Angular: summary, filter and AI** — totals per category, filter by category and month, sort; AI suggestion in the add form (accept or override, manual fallback)
