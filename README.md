@@ -122,6 +122,9 @@ cd backend && source .venv/bin/activate && uvicorn api:app --reload   # API on h
 cd frontend && npm start                 # UI on http://localhost:4200
 ```
 
+The API needs `JWT_SECRET` (see "Login" above). Open http://localhost:4200, create an account,
+and you're logged in; "Log out" is in the header. A login lasts 7 days.
+
 The API only accepts calls from `http://localhost:4200`, so keep the frontend on that port.
 Where the frontend looks for the API is set in `frontend/src/environments/environment.ts`.
 
@@ -167,7 +170,7 @@ exist. Errors always look like `{"detail": "a readable message"}` (`422` for inv
 - [x] **10a. Angular shell (mock data)** — can start right after stage 4: Angular app in `frontend/` with routing and layout; `Expense` interface; `ExpenseService` returning mock data; list page with total
 - [x] **10. Angular: list and add** — switch `ExpenseService` to `HttpClient` against the API; add form with validation
 - [x] **11. Angular: summary, filter and AI** — totals per category, filter by category and month, sort; AI suggestion in the add form (accept or override, manual fallback)
-- [ ] **12. Login** — sign-up and login (hashed passwords, token) in FastAPI; each expense belongs to a user; Angular login page, interceptor and route guard
+- [x] **12. Login** — sign-up and login (hashed passwords, token) in FastAPI; each expense belongs to a user; Angular login page, interceptor and route guard
 - [ ] **13. Deploy** — Angular on GitHub Pages (GitHub Actions), FastAPI on a free host, free hosted Postgres, Gemini key as a host secret; the site works from any device
 
 ## Structure
@@ -202,9 +205,14 @@ expense-tracker/
 │       ├── styles.css                   # colors, form fields, buttons and tables shared by all pages
 │       └── app/
 │           ├── app.ts / app.html   # layout: header + navigation
-│           ├── app.routes.ts       # /expenses, /expenses/new, /summary
+│           ├── app.routes.ts       # /login, /signup; /expenses, /expenses/new, /summary need a login
+│           ├── auth/
+│           │   ├── auth.service.ts # the token (kept in localStorage), log in, sign up, log out
+│           │   ├── auth.guards.ts  # logged out → login page (and back afterwards); logged in → past it
+│           │   └── auth-page/      # the login and sign-up page (one form, two modes)
 │           ├── core/
-│           │   └── api-error.ts    # turns a failed API call into a sentence for the page
+│           │   ├── api-error.ts        # turns a failed API call into a sentence for the page
+│           │   └── auth.interceptor.ts # adds the token to API calls only; a 401 logs out
 │           └── expenses/
 │               ├── expense.model.ts    # Expense, NewExpense, Summary, filters; CATEGORIES, FREQUENCIES
 │               ├── expense.service.ts  # the only data source: HttpClient calls to the API
