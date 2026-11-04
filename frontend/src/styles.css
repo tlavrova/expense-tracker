@@ -8,6 +8,8 @@
   --hover: #eef0f3;
   --accent: #2456c7;
   --accent-soft: #e6edfb;
+  --danger: #b42318;
+  --danger-soft: #fdecea;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -20,6 +22,8 @@
     --hover: #262a31;
     --accent: #8fb0ff;
     --accent-soft: #23304d;
+    --danger: #ff8a80;
+    --danger-soft: #3a1f1f;
   }
 }
 
@@ -38,4 +42,35 @@ body {
 h1 {
   margin: 0 0 1rem;
   font-size: 1.5rem;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.error {
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+button.link {
+  margin-left: 0.4rem;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-decoration: underline;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }

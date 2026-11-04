@@ -1,44 +1,69 @@
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { firstValueFrom } from 'rxjs';
+import { environment } from '../environments/environment';
+import { Expense } from './expense.model';
 import { ExpenseService } from './expense.service';
-import { MOCK_EXPENSES } from './mock-expenses';
 
-describe('ExpenseService (mock data)', () => {
+describe('ExpenseService (HTTP)', () => {
   let service: ExpenseService;
+  let http: HttpTestingController;
+  const api = environment.apiUrl;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({});
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
     service = TestBed.inject(ExpenseService);
+    http = TestBed.inject(HttpTestingController);
   });
 
-  it('lists the mock expenses', async () => {
-    const expenses = await firstValueFrom(service.list());
-    expect(expenses.length).toBe(MOCK_EXPENSES.length);
+  afterEach(() => http.verify()); // no unexpected requests
+
+  it('lists expenses with GET /expenses', async () => {
+    const answer = firstValueFrom(service.list());
+    const expenses: Expense[] = [
+      { id: 1, amount: 12, category: 'food', description: 'Lunch', date: '2026-11-02' },
+    ];
+    const request = http.expectOne(`${api}/expenses`);
+    expect(request.request.method).toBe('GET');
+    request.flush(expenses);
+    expect(await answer).toEqual(expenses);
   });
 
-  it('adds an expense with a new id', async () => {
-    const saved = await firstValueFrom(
-      service.add({ amount: 5, category: 'food', description: 'Coffee', date: '2026-11-03' }),
-    );
-    expect(saved.id).toBe(MOCK_EXPENSES.length + 1);
-    expect((await firstValueFrom(service.list())).length).toBe(MOCK_EXPENSES.length + 1);
+  it('adds with POST /expenses and returns the saved expense with its id', async () => {
+    const expense = { amount: 5, category: 'food', description: 'Coffee', date: '2026-11-03' };
+    const answer = firstValueFrom(service.add(expense));
+    const request = http.expectOne(`${api}/expenses`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual(expense);
+    request.flush({ ...expense, id: 7 }, { status: 201, statusText: 'Created' });
+    expect((await answer).id).toBe(7);
   });
 
-  it('deletes an expense by id', async () => {
-    await firstValueFrom(service.delete(1));
-    const expenses = await firstValueFrom(service.list());
-    expect(expenses.some((expense) => expense.id === 1)).toBe(false);
+  it('deletes with DELETE /expenses/{id}', async () => {
+    const answer = firstValueFrom(service.delete(3), { defaultValue: undefined });
+    const request = http.expectOne(`${api}/expenses/3`);
+    expect(request.request.method).toBe('DELETE');
+    request.flush(null, { status: 204, statusText: 'No Content' });
+    await answer;
   });
 
-  it('sums totals per category and overall', async () => {
-    const summary = await firstValueFrom(service.summary());
-    expect(summary.totalsByCategory['transport']).toBe(50.5);
-    expect(summary.total).toBeCloseTo(977.49);
+  it('reads the summary with GET /summary', async () => {
+    const answer = firstValueFrom(service.summary());
+    http.expectOne(`${api}/summary`).flush({ totalsByCategory: { food: 12 }, total: 12 });
+    expect((await answer).total).toBe(12);
   });
 
-  it('does not let callers change its data', async () => {
-    const expenses = await firstValueFrom(service.list());
-    expenses[0].amount = 1;
-    expect((await firstValueFrom(service.list()))[0].amount).toBe(900);
+  it('passes API errors on to the caller', async () => {
+    const answer = firstValueFrom(service.list());
+    http
+      .expectOne(`${api}/expenses`)
+      .flush({ detail: 'Database is down.' }, { status: 500, statusText: 'Server Error' });
+    await expect(answer).rejects.toMatchObject({
+      status: 500,
+      error: { detail: 'Database is down.' },
+    });
   });
 });

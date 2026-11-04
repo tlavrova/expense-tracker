@@ -1,40 +1,34 @@
-import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { Observable } from 'rxjs';
+import { environment } from '../environments/environment';
 import { Expense, NewExpense, Summary } from './expense.model';
-import { MOCK_EXPENSES } from './mock-expenses';
 
 /**
- * The only place that knows where expenses come from.
+ * The only place that knows where expenses come from: the FastAPI backend (backend/api.py).
  *
- * For now it serves mock data from memory. Stage 10 swaps the method bodies for HttpClient calls
- * to the FastAPI backend; the signatures (and so the components) stay the same.
+ * Components only see these four methods, so they didn't change when the mock data was replaced
+ * by HTTP calls (stage 10). Errors reach the caller as HttpErrorResponse; apiErrorMessage()
+ * turns one into a sentence for the page.
  */
 @Injectable({ providedIn: 'root' })
 export class ExpenseService {
-  private expenses: Expense[] = MOCK_EXPENSES.map((expense) => ({ ...expense }));
-  private nextId = Math.max(0, ...this.expenses.map((expense) => expense.id ?? 0)) + 1;
+  private readonly http = inject(HttpClient);
+  private readonly url = environment.apiUrl;
 
   list(): Observable<Expense[]> {
-    return of(this.expenses.map((expense) => ({ ...expense })));
+    return this.http.get<Expense[]>(`${this.url}/expenses`);
   }
 
   add(expense: NewExpense): Observable<Expense> {
-    const saved: Expense = { ...expense, id: this.nextId++ };
-    this.expenses.push(saved);
-    return of({ ...saved });
+    return this.http.post<Expense>(`${this.url}/expenses`, expense);
   }
 
   delete(id: number): Observable<void> {
-    this.expenses = this.expenses.filter((expense) => expense.id !== id);
-    return of(undefined);
+    return this.http.delete<void>(`${this.url}/expenses/${id}`);
   }
 
   summary(): Observable<Summary> {
-    const totalsByCategory: Record<string, number> = {};
-    for (const expense of this.expenses) {
-      totalsByCategory[expense.category] = (totalsByCategory[expense.category] ?? 0) + expense.amount;
-    }
-    const total = this.expenses.reduce((sum, expense) => sum + expense.amount, 0);
-    return of({ totalsByCategory, total });
+    return this.http.get<Summary>(`${this.url}/summary`);
   }
 }
