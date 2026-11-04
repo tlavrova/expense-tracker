@@ -65,6 +65,17 @@ def ask_frequency() -> str:
         print(f"⚠️  Please choose {options}, or leave it empty.")
 
 
+def ask_number(prompt: str, highest: int) -> int | None:
+    """Ask until the answer is a whole number from 1 to highest; empty means None (cancel)."""
+    while True:
+        answer = input(prompt).strip()
+        if not answer:
+            return None
+        if answer.isdigit() and 1 <= int(answer) <= highest:
+            return int(answer)
+        print(f"⚠️  Please enter a number from 1 to {highest}, or leave it empty.")
+
+
 def ask_yes_no(prompt: str, default: bool = True) -> bool:
     """Ask until the answer is yes or no; Enter means the default."""
     while True:
