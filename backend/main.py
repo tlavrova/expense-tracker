@@ -22,6 +22,7 @@ MENU = [
     ("Filter", screens.show_filtered),
     ("Month", screens.show_month),
     ("Statistics", screens.show_statistics),
+    ("Delete", screens.delete_expense),
 ]
 
 
@@ -42,18 +43,20 @@ def main() -> None:
     )
     logging.getLogger("expense_tracker").setLevel(logging.INFO)  # our own actions in full
     try:
+        imported = storage.import_json()  # once: the expenses.json used before stage 8a
         tracker = storage.load()
     except storage.StorageError as error:
-        # Stop instead of starting empty: saving would overwrite the user's data.
         logging.getLogger("expense_tracker").error("%s", error)
         print(f"❌ {error}")
-        print("Fix or move the file, then start again.")
+        print("Check DATABASE_URL or expenses.json, then start again.")
         sys.exit(1)
 
     actions = {str(number): screen for number, (_, screen) in enumerate(MENU, start=1)}
     quit_choice = str(len(MENU) + 1)
 
     print("=== Expense Tracker ===")
+    if imported:
+        print(f"Moved {imported} expense(s) from expenses.json into the database.")
     if tracker:
         print(f"Loaded {len(tracker)} expense(s).")
     try:
@@ -64,7 +67,10 @@ def main() -> None:
                 break
             action = actions.get(choice)
             if action:
-                action(tracker)
+                try:
+                    action(tracker)
+                except storage.StorageError as error:  # e.g. the database went away; keep running
+                    print(f"❌ {error}")
             else:
                 print(f"Please choose 1–{quit_choice}.")
     except (KeyboardInterrupt, EOFError):  # Ctrl+C or Ctrl+D

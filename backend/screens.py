@@ -14,7 +14,15 @@ import ai_helper
 import storage
 from decorators import log_action
 from models import CATEGORIES, Expense, ExpenseTracker, RecurringExpense
-from prompts import ask_amount, ask_date, ask_frequency, ask_month, ask_text, ask_yes_no
+from prompts import (
+    ask_amount,
+    ask_date,
+    ask_frequency,
+    ask_month,
+    ask_number,
+    ask_text,
+    ask_yes_no,
+)
 
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -38,7 +46,7 @@ def needs_expenses(screen: F) -> F:
 
 @log_action
 def add_expense(tracker: ExpenseTracker) -> None:
-    """Ask for an expense, add it to the tracker and save."""
+    """Ask for an expense, save it to the database and add it to the tracker."""
     description = ask_text("Description: ")
     amount = ask_amount()
     category = choose_category(description)
@@ -50,12 +58,8 @@ def add_expense(tracker: ExpenseTracker) -> None:
         expense = RecurringExpense(amount, category, description, when, frequency)
     else:
         expense = Expense(amount, category, description, when)
+    storage.add(expense)  # save first, so the tracker only holds what is in the database
     tracker.add(expense)
-    try:
-        storage.save(tracker)
-    except OSError as error:
-        print(f"⚠️  Added, but couldn't save to {storage.DEFAULT_PATH}: {error}")
-        return
     print("✅ Saved.")
 
 
@@ -103,10 +107,9 @@ def show_all(tracker: ExpenseTracker) -> None:
 @needs_expenses
 def show_summary(tracker: ExpenseTracker) -> None:
     """Print totals per category, the overall total and the unique categories."""
-    totals = tracker.totals_by_category()
     print("Totals per category:")
-    for category in sorted(totals):
-        print(f"  {category}: {totals[category]:.2f}")
+    for category, total in storage.totals_by_category().items():
+        print(f"  {category}: {total:.2f}")
     print(f"Total spent: {tracker.total():.2f}")
     categories = sorted(tracker.categories())
     print(f"Categories ({len(categories)}): {', '.join(categories)}")
@@ -139,5 +142,27 @@ def show_statistics(tracker: ExpenseTracker) -> None:
     for category, count in tracker.count_by_category().most_common():
         print(f"  {category}: {count}")
     print("Totals per month:")
-    for month, total in tracker.totals_by_month().items():
+    for month, total in storage.totals_by_month().items():
         print(f"  {month}: {total:.2f}")
+
+
+@log_action
+@needs_expenses
+def delete_expense(tracker: ExpenseTracker) -> None:
+    """Show the numbered list, ask which expense to delete, confirm and delete it."""
+    expenses = tracker.sorted_by()
+    print_expenses(expenses)
+    number = ask_number(f"Number to delete (1–{len(expenses)}, empty to cancel): ", len(expenses))
+    if number is None:
+        print("Cancelled.")
+        return
+    expense = expenses[number - 1]
+    if not ask_yes_no(f"Delete \"{expense}\"? (y/N): ", default=False):
+        print("Cancelled.")
+        return
+    assert expense.id is not None  # everything in the tracker came from the database
+    if storage.delete(expense.id):
+        print("🗑️  Deleted.")
+    else:
+        print("⚠️  It was already gone.")
+    tracker.remove(expense.id)

@@ -13,7 +13,7 @@ website (stages 12–13).
 ```
 === Expense Tracker ===
 1) Add expense   2) Show all   3) Summary   4) Filter
-5) Month   6) Statistics   7) Quit
+5) Month   6) Statistics   7) Delete   8) Quit
 > 1
 Description: Uber to airport
 Amount: 32.50
@@ -67,6 +67,21 @@ suggestion. The free tier also has a per-minute limit, so many suggestions in a 
 On the free tier, Google may use what is sent (the expense descriptions) to improve its
 products, so don't put anything private in descriptions.
 
+## Data (database)
+
+Expenses are stored in a database through SQLModel. On your Mac that is the SQLite file
+`backend/expenses.db`, created on first start; it is git-ignored, so your data never gets
+committed. To use another database, set `DATABASE_URL`; online (stage 13) that will be a hosted
+Postgres:
+
+```bash
+export DATABASE_URL=postgresql://user:password@host/dbname   # optional; default is expenses.db
+```
+
+Upgrading from stage 7 or 8: on the first start, the expenses in `backend/expenses.json` are moved
+into the database once, and the file is renamed to `expenses.json.imported` (keep it as a backup
+or delete it).
+
 ## Run
 
 Command-line app (stages 1–8):
@@ -101,7 +116,7 @@ cd frontend && npm start                 # UI on http://localhost:4200
 - [x] **6. Files and modules** — auto save/load `expenses.json` in `storage.py`; input helpers in `prompts.py`; `main.py` only has the screens and the menu
 - [x] **7. Advanced Python** — `@log_action` decorator; generator for a chosen month; `datetime`, `defaultdict`/`Counter` for stats
 - [x] **8. AI auto-categorization** — `ai_helper.suggest_category(description: str) -> str` with the Gemini API free tier via the `google-genai` package; key in `GEMINI_API_KEY`; only food, transport, housing, entertainment, shopping, health or other (anything else becomes other); accept or override; falls back to manual on errors and rate limits
-- [ ] **8a. Database storage** — `storage.py` switches from JSON to a database through SQLModel: SQLite (`expenses.db`) on your Mac, Postgres online, chosen by `DATABASE_URL`; one row per expense with an `id`, `GROUP BY` for totals; delete from the menu; one-time import of `expenses.json`
+- [x] **8a. Database storage** — `storage.py` switches from JSON to a database through SQLModel: SQLite (`expenses.db`) on your Mac, Postgres online, chosen by `DATABASE_URL`; one row per expense with an `id`, `GROUP BY` for totals; delete from the menu; one-time import of `expenses.json`
 - [ ] **9. REST API** — FastAPI app in `api.py` reusing `ExpenseTracker` and `storage`: list, add, delete, summary, filter, and suggest-category endpoints; CORS for the Angular dev server
 - [x] **10a. Angular shell (mock data)** — can start right after stage 4: Angular app in `frontend/` with routing and layout; `Expense` interface; `ExpenseService` returning mock data; list page with total
 - [ ] **10. Angular: list and add** — switch `ExpenseService` to `HttpClient` against the API; add form with validation
@@ -119,12 +134,12 @@ expense-tracker/
 │   ├── prompts.py       # ask_text, ask_amount, ask_date, ask_month, ask_frequency
 │   ├── decorators.py    # @log_action
 │   ├── models.py        # Expense, RecurringExpense, ExpenseTracker
-│   ├── storage.py       # database storage via SQLModel (JSON until stage 8a)
+│   ├── storage.py       # database storage via SQLModel: add, delete, totals, JSON import
 │   ├── ai_helper.py     # AI category suggestion (Gemini)
 │   ├── api.py           # FastAPI REST API for the frontend
-│   ├── expenses.db      # local SQLite data (git-ignored; expenses.json before stage 8a)
+│   ├── expenses.db      # local SQLite data (git-ignored; created on first start)
 │   ├── expenses.log     # action log from @log_action (git-ignored)
-│   └── requirements.txt # google-genai, fastapi, uvicorn (sqlmodel from stage 8a)
+│   └── requirements.txt # google-genai, fastapi, uvicorn, sqlmodel
 ├── frontend/            # Angular 22 app
 │   └── src/app/
 │       ├── expense.model.ts    # Expense, NewExpense, Summary types

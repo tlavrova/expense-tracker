@@ -6,8 +6,8 @@ Nothing here reads input or prints, so the CLI (main.py), tests and the API can 
 from __future__ import annotations
 
 import math
-from collections import Counter, defaultdict
-from dataclasses import dataclass
+from collections import Counter
+from dataclasses import dataclass, field
 from datetime import date as Date
 from typing import Iterator
 
@@ -42,6 +42,9 @@ class Expense:
     category: str
     description: str
     date: Date  # a "YYYY-MM-DD" string is accepted and converted
+    # Set by the database when the expense is saved (stage 8a); None until then.
+    # Keyword-only, so it never shifts the positional fields, and ignored when comparing.
+    id: int | None = field(default=None, kw_only=True, compare=False)
 
     def __post_init__(self) -> None:
         validate_amount(self.amount)
@@ -84,21 +87,12 @@ class ExpenseTracker:
     def add(self, expense: Expense) -> None:
         self.expenses.append(expense)
 
+    def remove(self, expense_id: int) -> None:
+        """Drop the expense with this id (after the database deleted it)."""
+        self.expenses = [expense for expense in self.expenses if expense.id != expense_id]
+
     def total(self) -> float:
         return sum(expense.amount for expense in self.expenses)
-
-    def totals_by_category(self) -> dict[str, float]:
-        totals: defaultdict[str, float] = defaultdict(float)
-        for expense in self.expenses:
-            totals[expense.category] += expense.amount
-        return dict(totals)
-
-    def totals_by_month(self) -> dict[str, float]:
-        """Return "YYYY-MM" -> total amount, oldest month first."""
-        totals: defaultdict[str, float] = defaultdict(float)
-        for expense in self.expenses:
-            totals[expense.date.strftime("%Y-%m")] += expense.amount
-        return dict(sorted(totals.items()))
 
     def count_by_category(self) -> Counter[str]:
         """How many expenses each category has; .most_common() sorts them."""
