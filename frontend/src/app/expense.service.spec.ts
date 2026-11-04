@@ -32,6 +32,26 @@ describe('ExpenseService (HTTP)', () => {
     expect(await answer).toEqual(expenses);
   });
 
+  it('sends only the filters that are set as query parameters', async () => {
+    const answer = firstValueFrom(
+      service.list({ category: 'food', month: '2026-11', sort: undefined }),
+    );
+    const request = http.expectOne((req) => req.url === `${api}/expenses`);
+    expect(request.request.params.keys()).toEqual(['category', 'month']);
+    expect(request.request.urlWithParams).toBe(`${api}/expenses?category=food&month=2026-11`);
+    request.flush([]);
+    expect(await answer).toEqual([]);
+  });
+
+  it('asks POST /suggest-category and returns just the category', async () => {
+    const answer = firstValueFrom(service.suggestCategory('Uber to airport'));
+    const request = http.expectOne(`${api}/suggest-category`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ description: 'Uber to airport' });
+    request.flush({ category: 'transport' });
+    expect(await answer).toBe('transport');
+  });
+
   it('adds with POST /expenses and returns the saved expense with its id', async () => {
     const expense = { amount: 5, category: 'food', description: 'Coffee', date: '2026-11-03' };
     const answer = firstValueFrom(service.add(expense));

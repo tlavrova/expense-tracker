@@ -1,4 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
   FormControl,
@@ -8,6 +9,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { apiErrorMessage } from '../api-error';
 import { CATEGORIES, FREQUENCIES, Frequency, NewExpense } from '../expense.model';
 import { ExpenseService } from '../expense.service';
@@ -51,9 +53,63 @@ export class AddExpense {
     frequency: ['' as Frequency | ''],
   });
 
+  /** The AI suggestion for the category: idle, waiting for Gemini, suggested, or unavailable. */
+  protected readonly ai = signal<'idle' | 'asking' | 'suggested' | 'failed'>('idle');
+  protected readonly aiError = signal('');
+  /** The description last sent to the AI, so leaving the field again doesn't ask twice. */
+  private askedFor = '';
+  private suggested = '';
+  private pending?: Subscription;
+
   protected readonly saving = signal(false);
   /** The API's own message when it rejects the expense or can't be reached. */
   protected readonly serverError = signal('');
+
+  constructor() {
+    // Typing a category of your own overrides the AI: drop its note, or its answer still on the way.
+    this.form.controls.category.valueChanges.pipe(takeUntilDestroyed()).subscribe((value) => {
+      if (value !== this.suggested) {
+        this.cancelSuggestion();
+      }
+    });
+  }
+
+  /** Leaving the description with no category yet asks the AI, once per description. */
+  protected descriptionDone(): void {
+    const description = this.form.controls.description.value.trim();
+    if (description && description !== this.askedFor && !this.form.controls.category.value.trim()) {
+      this.suggest();
+    }
+  }
+
+  /** Ask the AI for a category; the answer fills the field unless the user typed one meanwhile. */
+  protected suggest(): void {
+    const description = this.form.controls.description.value.trim();
+    if (!description) {
+      return;
+    }
+    this.cancelSuggestion();
+    this.askedFor = description;
+    this.ai.set('asking');
+    this.pending = this.expenseService.suggestCategory(description).subscribe({
+      next: (category) => {
+        this.suggested = category;
+        this.form.controls.category.setValue(category);
+        this.ai.set('suggested');
+      },
+      error: (error: unknown) => {
+        this.aiError.set(apiErrorMessage(error));
+        this.ai.set('failed');
+      },
+    });
+  }
+
+  private cancelSuggestion(): void {
+    this.pending?.unsubscribe();
+    this.pending = undefined;
+    this.suggested = '';
+    this.ai.set('idle');
+  }
 
   /** Show a field's error once the user has left it, or tried to save. */
   protected showError(name: keyof typeof this.form.controls): boolean {

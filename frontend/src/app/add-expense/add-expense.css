@@ -17,7 +17,8 @@
   gap: 0.3rem;
 }
 
-.field > span {
+.field > span,
+.label-row label {
   font-weight: 600;
   font-size: 0.9rem;
 }
@@ -65,4 +66,19 @@
 .primary:disabled {
   opacity: 0.6;
   cursor: default;
+}
+
+.label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.suggest {
+  font-size: 0.85rem;
+  color: var(--accent);
+}
+
+.ai-failed {
+  color: var(--danger);
 }
