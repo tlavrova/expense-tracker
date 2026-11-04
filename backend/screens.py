@@ -6,14 +6,34 @@ the result. Screens are wrapped in @log_action so every action ends up in the lo
 
 from __future__ import annotations
 
+import functools
 from datetime import date
-from typing import Iterable
+from typing import Any, Callable, Iterable, TypeVar
 
 import ai_helper
 import storage
 from decorators import log_action
 from models import CATEGORIES, Expense, ExpenseTracker, RecurringExpense
 from prompts import ask_amount, ask_date, ask_frequency, ask_month, ask_text, ask_yes_no
+
+F = TypeVar("F", bound=Callable[..., Any])
+
+
+def needs_expenses(screen: F) -> F:
+    """Print "No expenses yet." and skip the screen when the tracker is empty.
+
+    It prints, so it lives here with the screens instead of in decorators.py (shared with the API).
+    Put it under @log_action, so an empty-tracker visit is still logged.
+    """
+
+    @functools.wraps(screen)
+    def wrapper(tracker: ExpenseTracker, *args: Any, **kwargs: Any) -> Any:
+        if not tracker:
+            print("No expenses yet.")
+            return None
+        return screen(tracker, *args, **kwargs)
+
+    return wrapper  # type: ignore[return-value]
 
 
 @log_action
@@ -71,22 +91,18 @@ def print_expenses(expenses: Iterable[Expense]) -> None:
 
 
 @log_action
+@needs_expenses
 def show_all(tracker: ExpenseTracker) -> None:
     """Print all expenses, optionally sorted by amount or date."""
-    if not tracker:
-        print("No expenses yet.")
-        return
     order = input("Sort by (a)mount, (d)ate, or Enter for as entered: ").strip().lower()
-    key = {"a": "amount", "d": "date"}.get(order, "")
+    key = {"a": "amount", "d": "date"}.get(order)  # anything else: as entered
     print_expenses(tracker.sorted_by(key))
 
 
 @log_action
+@needs_expenses
 def show_summary(tracker: ExpenseTracker) -> None:
     """Print totals per category, the overall total and the unique categories."""
-    if not tracker:
-        print("No expenses yet.")
-        return
     totals = tracker.totals_by_category()
     print("Totals per category:")
     for category in sorted(totals):
@@ -97,32 +113,26 @@ def show_summary(tracker: ExpenseTracker) -> None:
 
 
 @log_action
+@needs_expenses
 def show_filtered(tracker: ExpenseTracker) -> None:
     """Ask for a category and print only its expenses."""
-    if not tracker:
-        print("No expenses yet.")
-        return
     category = ask_text("Category: ")
     print_expenses(tracker.filter_by_category(category))
 
 
 @log_action
+@needs_expenses
 def show_month(tracker: ExpenseTracker) -> None:
     """Ask for a month and print its expenses, read one at a time from a generator."""
-    if not tracker:
-        print("No expenses yet.")
-        return
     year, month = ask_month()
     print(f"{date(year, month, 1):%B %Y}:")
     print_expenses(tracker.expenses_in_month(year, month))
 
 
 @log_action
+@needs_expenses
 def show_statistics(tracker: ExpenseTracker) -> None:
     """Print counts per category, average and largest expense, and totals per month."""
-    if not tracker:
-        print("No expenses yet.")
-        return
     print(f"Expenses: {len(tracker)}   Average: {tracker.average():.2f}")
     print(f"Largest: {tracker.largest()}")
     print("Most frequent categories:")
