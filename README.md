@@ -205,6 +205,8 @@ uses the same database and rules as the command-line app.
 | `GET /auth/me` | who is logged in | `{"id": 1, "email": "..."}` |
 | `GET /expenses` | your expenses; optional `?category=food`, `?month=2026-11`, `?sort=amount` or `date` | list |
 | `POST /expenses` | add one (amount, category, description, date, optional frequency) | `201` + the saved expense with its `id` |
+| `GET /expenses/{id}` | one of your expenses | the expense, or `404` |
+| `PUT /expenses/{id}` | change one: the same body and rules as adding (leave out frequency for a one-off) | the saved expense, or `404` |
 | `DELETE /expenses/{id}` | delete one | `204`, or `404` |
 | `GET /summary` | totals per category and overall | `{"totalsByCategory": {...}, "total": ...}` |
 | `POST /suggest-category` | `{"description": "..."}` → Gemini's category | `{"category": "..."}`, or `503` when AI isn't available |

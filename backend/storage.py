@@ -14,7 +14,7 @@ from __future__ import annotations
 from typing import Literal
 
 from sqlalchemy import Engine, extract
-from sqlmodel import col, func, select
+from sqlmodel import Session, col, func, select
 
 import database
 from database import ExpenseRow, StorageError
@@ -25,10 +25,12 @@ __all__ = [
     "StorageError",
     "add",
     "delete",
+    "get",
     "list_expenses",
     "load",
     "totals_by_category",
     "totals_by_month",
+    "update",
 ]
 
 LOCAL: None = None
@@ -42,6 +44,11 @@ def _owned_by(statement, owner: Owner):
     if owner is LOCAL:
         return statement.where(col(ExpenseRow.user_id).is_(None))
     return statement.where(ExpenseRow.user_id == owner)
+
+
+def _owned_row(session: Session, expense_id: int, owner: Owner) -> ExpenseRow | None:
+    """The row with this id, only if it belongs to this owner (another owner's id: None)."""
+    return session.exec(_owned_by(select(ExpenseRow), owner).where(ExpenseRow.id == expense_id)).first()
 
 
 def row_from_expense(expense: Expense, owner: Owner) -> ExpenseRow:
@@ -110,10 +117,35 @@ def add(expense: Expense, *, owner: Owner, engine: Engine | None = None) -> Expe
     return expense
 
 
+def get(expense_id: int, *, owner: Owner, engine: Engine | None = None) -> Expense | None:
+    """One of the owner's expenses, or None if there is none with this id for this owner."""
+    with database.open_session("read the expense", engine) as session:
+        row = _owned_row(session, expense_id, owner)
+        return None if row is None else expense_from_row(row)
+
+
+def update(expense_id: int, expense: Expense, *, owner: Owner, engine: Engine | None = None) -> Expense | None:
+    """Replace one of the owner's expenses with these values (it keeps its id and owner).
+
+    None if there is none with this id for this owner.
+    """
+    with database.open_session("save the expense", engine) as session:
+        row = _owned_row(session, expense_id, owner)
+        if row is None:
+            return None
+        new = row_from_expense(expense, owner)
+        for field in ("amount", "category", "description", "date", "frequency"):
+            setattr(row, field, getattr(new, field))
+        session.add(row)
+        session.commit()
+    expense.id = expense_id
+    return expense
+
+
 def delete(expense_id: int, *, owner: Owner, engine: Engine | None = None) -> bool:
     """Delete one of the owner's expenses. False if there is none with this id for this owner."""
     with database.open_session("delete the expense", engine) as session:
-        row = session.exec(_owned_by(select(ExpenseRow), owner).where(ExpenseRow.id == expense_id)).first()
+        row = _owned_row(session, expense_id, owner)
         if row is None:
             return False
         session.delete(row)
