@@ -143,3 +143,34 @@ def test_the_address_comes_from_client_ip_header_when_set(client, sign_up, monke
         assert login(client, password="wrong password", headers=made_up).status_code == 401
     assert login(client, headers={"True-Client-IP": "203.0.113.7"}).status_code == 429
     assert login(client, headers={"True-Client-IP": "203.0.113.8"}).status_code == 200  # another visitor
+
+
+def change_password(client, headers, current="correct horse", new="new horse battery"):
+    return client.post("/auth/password", json={"current_password": current, "new_password": new}, headers=headers)
+
+
+def test_change_password(client, sign_up):
+    headers = sign_up()
+    assert change_password(client, headers).status_code == 204
+    assert login(client).status_code == 401  # the old password no longer works
+    assert login(client, password="new horse battery").status_code == 200
+    assert client.get("/auth/me", headers=headers).status_code == 200  # this login stays valid
+
+
+def test_change_password_needs_the_current_one_and_a_long_enough_new_one(client, sign_up):
+    headers = sign_up()
+    wrong = change_password(client, headers, current="wrong password")
+    assert wrong.status_code == 400  # not 401: that would log the browser out
+    assert wrong.json() == {"detail": "Your current password is wrong."}
+    short = change_password(client, headers, new="short")
+    assert short.status_code == 422 and short.json()["detail"].startswith("new_password: String should have at least 8")
+    assert login(client).status_code == 200  # still the old password
+    assert client.post("/auth/password", json={"current_password": "x", "new_password": "long enough"}).status_code == 401
+
+
+def test_guessing_the_current_password_counts_as_failed_logins(client, sign_up):
+    headers = sign_up()
+    for _ in range(5):
+        assert change_password(client, headers, current="wrong password").status_code == 400
+    assert change_password(client, headers).status_code == 429
+    assert login(client).status_code == 429  # the same count as logging in with that email

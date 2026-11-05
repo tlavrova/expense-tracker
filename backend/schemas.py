@@ -51,6 +51,13 @@ class SignupRequest(BaseModel):
     password: str = Field(min_length=8, max_length=128)
 
 
+class PasswordChange(BaseModel):
+    """Changing the password while logged in: the current one proves it's really you."""
+
+    current_password: str
+    new_password: str = Field(min_length=8, max_length=128)  # the same rule as SignupRequest
+
+
 class Token(BaseModel):
     """What sign-up and login return; the browser sends access_token back as "Bearer <token>"."""
 
