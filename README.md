@@ -254,6 +254,7 @@ expense-tracker/
 │   ├── users.py         # accounts: create, find by email or id
 │   ├── security.py      # password hashing, login tokens (JWT_SECRET), the logged-in user
 │   ├── rate_limit.py    # "at most N times in M minutes", for login and sign-up attempts
+│   ├── limits.py        # the visitor's address (CLIENT_IP_HEADER) and the 429 answer, for the routers
 │   ├── alembic.ini      # Alembic settings (database migrations)
 │   ├── migrations/      # migration scripts: 0001 expenses table, 0002 users + expenses.user_id
 │   ├── json_import.py   # one-time move of the old expenses.json into the database
@@ -262,7 +263,8 @@ expense-tracker/
 │   ├── schemas.py       # the API's JSON shapes (Pydantic)
 │   ├── routers/
 │   │   ├── auth.py      # /auth/signup, /auth/login, /auth/me
-│   │   └── expenses.py  # /expenses, /summary, /suggest-category (login required)
+│   │   ├── expenses.py  # /expenses, /summary (login required)
+│   │   └── ai.py        # /suggest-category (login required)
 │   ├── expenses.db      # local SQLite data (git-ignored; created on first start)
 │   ├── expenses.log     # action log from @log_action (git-ignored)
 │   ├── tests/           # pytest: one temporary database per test, Gemini never called

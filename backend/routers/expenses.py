@@ -1,4 +1,4 @@
-"""The expense endpoints: list, get one, add, change, delete, summary and the AI category suggestion.
+"""The expense endpoints: list, get one, add, change, delete, and the summary.
 
 Every endpoint needs a logged-in user (security.CurrentUser) and only sees that user's own
 expenses: another account's expense id answers 404, as if it didn't exist.
@@ -11,10 +11,9 @@ from typing import Literal
 
 from fastapi import APIRouter, HTTPException, Query, Response, status
 
-import ai_helper
 import storage
 from models import Expense, RecurringExpense
-from schemas import ExpenseOut, NewExpense, Suggestion, SuggestionRequest, Summary
+from schemas import ExpenseOut, NewExpense, Summary
 from security import CurrentUser
 
 router = APIRouter(tags=["expenses"])
@@ -111,15 +110,3 @@ def summary(user: CurrentUser) -> Summary:
     """Your totals per category (added up by the database) and the overall total."""
     totals = storage.totals_by_category(owner=user.id)
     return Summary(totals_by_category=totals, total=sum(totals.values()))
-
-
-@router.post("/suggest-category", response_model=Suggestion)
-def suggest_category(request: SuggestionRequest, user: CurrentUser) -> Suggestion:
-    """Gemini's category for a description; 503 with the reason when the AI isn't available.
-
-    Login is required here too, so strangers can't use up the Gemini free-tier quota.
-    """
-    try:
-        return Suggestion(category=ai_helper.suggest_category(request.description))
-    except ai_helper.AIUnavailableError as error:
-        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(error)) from None

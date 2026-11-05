@@ -9,24 +9,20 @@ Guessing passwords is slowed down (rate_limit.py), answering 429 "Too many attem
   a wrong current password when changing it counts as a failed login too;
 - at most 30 login and sign-up attempts per IP address within 15 minutes, against scripts
   that try many emails.
-The visitor's address: behind a hosting service's proxy, the connection comes from the proxy, and
-X-Forwarded-For can't be trusted on Render (it keeps whatever the visitor sends, so the limits could
-be dodged with made-up addresses). Online, CLIENT_IP_HEADER names a header the host's proxy always
-overwrites with the real address: True-Client-IP on Render (set by Cloudflare in front of it).
+The visitor's address and the 429 answer come from limits.py (shared with routers/ai.py).
 """
 
 from __future__ import annotations
 
-import math
-import os
-from typing import Annotated, Hashable
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 import security
 import users
-from rate_limit import RateLimit, TooManyAttempts
+from limits import check, client_ip
+from rate_limit import RateLimit
 from schemas import PasswordChange, SignupRequest, Token, UserOut
 from security import CurrentUser
 
@@ -37,41 +33,16 @@ failed_logins = RateLimit(limit=5, window=WINDOW)  # key: (IP address, email)
 attempts_per_ip = RateLimit(limit=30, window=WINDOW)  # key: IP address
 
 
-def _client_ip(request: Request) -> str:
-    """The visitor's address: from CLIENT_IP_HEADER if set (online), else from the connection."""
-    header = os.environ.get("CLIENT_IP_HEADER", "").strip()
-    if header and request.headers.get(header, "").strip():
-        return request.headers[header].strip()
-    return request.client.host if request.client else "unknown"
-
-
-def _too_many(error: TooManyAttempts) -> HTTPException:
-    minutes = math.ceil(error.retry_after / 60)
-    return HTTPException(
-        status.HTTP_429_TOO_MANY_REQUESTS,
-        f"Too many attempts. Try again in {minutes} minute{'s' if minutes != 1 else ''}.",
-        headers={"Retry-After": str(error.retry_after)},
-    )
-
-
-def _check(limit: RateLimit, key: Hashable) -> None:
-    """429 "Too many attempts" if this key has used up the limit."""
-    try:
-        limit.check(key)
-    except TooManyAttempts as error:
-        raise _too_many(error) from None
-
-
 def _count_attempt(ip: str) -> None:
     """Every login or sign-up counts towards the per-IP limit; 429 once it is reached."""
-    _check(attempts_per_ip, ip)
+    check(attempts_per_ip, ip)
     attempts_per_ip.hit(ip)
 
 
 @router.post("/signup", status_code=status.HTTP_201_CREATED, response_model=Token)
 def signup(request: SignupRequest, http: Request) -> Token:
     """Create an account and log it in straight away. 409 if the email has an account already."""
-    _count_attempt(_client_ip(http))
+    _count_attempt(client_ip(http))
     try:
         user = users.create(request.email, security.hash_password(request.password))
     except users.EmailTakenError:
@@ -82,10 +53,10 @@ def signup(request: SignupRequest, http: Request) -> Token:
 @router.post("/login", response_model=Token)
 def login(form: Annotated[OAuth2PasswordRequestForm, Depends()], http: Request) -> Token:
     """Email (in the form field "username") and password in, token out; 401 if they don't match."""
-    ip = _client_ip(http)
+    ip = client_ip(http)
     _count_attempt(ip)
     key = (ip, users.normalize_email(form.username))
-    _check(failed_logins, key)  # checked before the password, so guessing stops right here
+    check(failed_logins, key)  # checked before the password, so guessing stops right here
     user = security.authenticate(form.username, form.password)
     if user is None:
         failed_logins.hit(key)
@@ -111,9 +82,9 @@ def change_password(change: PasswordChange, user: CurrentUser, http: Request) ->
     400 rather than 401: the login itself is fine, and a 401 would log the browser out.
     Logins on other devices stay valid until their token expires (7 days).
     """
-    ip = _client_ip(http)
+    ip = client_ip(http)
     key = (ip, user.email)  # the same count as failed logins for this email
-    _check(failed_logins, key)
+    check(failed_logins, key)
     if security.authenticate(user.email, change.current_password) is None:
         failed_logins.hit(key)
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Your current password is wrong.")
