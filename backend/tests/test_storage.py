@@ -67,3 +67,21 @@ def test_totals_per_category_and_month(two_users):
 def test_owner_is_required():
     with pytest.raises(TypeError):
         storage.list_expenses()  # no default, so no code can forget whose expenses it means
+
+
+def test_get_and_update_only_the_owners_expense(two_users):
+    ana, bob = two_users
+    uber = storage.add(Expense(32.5, "transport", "Uber", "2026-11-01"), owner=ana)
+    assert storage.get(uber.id, owner=ana).description == "Uber"
+    assert storage.get(uber.id, owner=bob) is None
+    assert storage.get(uber.id, owner=storage.LOCAL) is None
+
+    rent = RecurringExpense(900, "housing", "Rent", "2026-10-01", "monthly")
+    assert storage.update(uber.id, rent, owner=bob) is None  # Bob can't change Ana's expense
+    assert storage.update(uber.id, rent, owner=ana).id == uber.id
+    saved = storage.get(uber.id, owner=ana)
+    assert (saved.description, saved.amount, saved.frequency) == ("Rent", 900, "monthly")
+
+    storage.update(uber.id, Expense(32.5, "transport", "Uber", "2026-11-01"), owner=ana)
+    assert not hasattr(storage.get(uber.id, owner=ana), "frequency")  # no longer repeats
+    assert len(storage.list_expenses(owner=ana)) == 1

@@ -77,6 +77,38 @@ def test_users_cannot_see_or_delete_each_others_expenses(client, ana, sign_up):
     assert client.delete(f"/expenses/{anas_first}", headers=ana).status_code == 404
 
 
+def test_get_and_change_one_expense(client, ana):
+    uber = client.get("/expenses", headers=ana).json()[1]
+    assert client.get(f"/expenses/{uber['id']}", headers=ana).json() == uber
+
+    changed = client.put(f"/expenses/{uber['id']}", json={**UBER, "amount": 35, "category": "Travel", "frequency": "Weekly"},
+                         headers=ana)
+    assert changed.status_code == 200
+    assert changed.json() == {**uber, "amount": 35.0, "category": "travel", "frequency": "weekly"}
+    assert client.get(f"/expenses/{uber['id']}", headers=ana).json() == changed.json()
+
+    one_off = client.put(f"/expenses/{uber['id']}", json=UBER, headers=ana).json()  # no frequency: no longer repeats
+    assert "frequency" not in one_off
+    assert [e["description"] for e in client.get("/expenses", headers=ana).json()] == ["Rent", "Uber", "Taxi"]  # same place
+
+
+def test_changing_an_expense_checks_the_same_rules(client, ana):
+    uber_id = client.get("/expenses", headers=ana).json()[1]["id"]
+    answer = client.put(f"/expenses/{uber_id}", json={**UBER, "amount": -5}, headers=ana)
+    assert answer.status_code == 422 and answer.json()["detail"].startswith("Amount must be greater than zero")
+    assert client.get(f"/expenses/{uber_id}", headers=ana).json()["amount"] == 32.5  # unchanged
+
+
+def test_users_cannot_see_or_change_each_others_expense(client, ana, sign_up):
+    bob = sign_up("bob@example.com", "bobs password")
+    anas_first = client.get("/expenses", headers=ana).json()[0]
+    assert client.get(f"/expenses/{anas_first['id']}", headers=bob).status_code == 404
+    answer = client.put(f"/expenses/{anas_first['id']}", json=UBER, headers=bob)
+    assert answer.status_code == 404 and answer.json() == {"detail": f"No expense with id {anas_first['id']}."}
+    assert client.get(f"/expenses/{anas_first['id']}", headers=ana).json() == anas_first  # untouched
+    assert client.put("/expenses/999", json=UBER, headers=ana).status_code == 404
+
+
 def test_the_command_line_apps_expenses_stay_out_of_the_website(client, sign_up):
     storage.add(Expense(3.5, "food", "CLI coffee", "2026-11-01"), owner=storage.LOCAL)
     assert client.get("/expenses", headers=sign_up()).json() == []
@@ -108,3 +140,9 @@ def test_cors_origins_come_from_the_environment(monkeypatch):
     assert api.allowed_origins() == ["http://localhost:4200"]
     monkeypatch.setenv("CORS_ORIGINS", " https://someone.github.io/ , http://localhost:4200,")
     assert api.allowed_origins() == ["https://someone.github.io", "http://localhost:4200"]
+
+
+def test_cors_allows_changing_an_expense_from_the_website(client):
+    answer = client.options("/expenses/1", headers={"Origin": "http://localhost:4200", "Access-Control-Request-Method": "PUT",
+                                                   "Access-Control-Request-Headers": "authorization,content-type"})
+    assert answer.status_code == 200 and "PUT" in answer.headers["access-control-allow-methods"]

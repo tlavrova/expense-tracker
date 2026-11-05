@@ -25,10 +25,12 @@ __all__ = [
     "StorageError",
     "add",
     "delete",
+    "get",
     "list_expenses",
     "load",
     "totals_by_category",
     "totals_by_month",
+    "update",
 ]
 
 LOCAL: None = None
@@ -107,6 +109,31 @@ def add(expense: Expense, *, owner: Owner, engine: Engine | None = None) -> Expe
         session.add(row)
         session.commit()
         expense.id = row.id
+    return expense
+
+
+def get(expense_id: int, *, owner: Owner, engine: Engine | None = None) -> Expense | None:
+    """One of the owner's expenses, or None if there is none with this id for this owner."""
+    with database.open_session("read the expense", engine) as session:
+        row = session.exec(_owned_by(select(ExpenseRow), owner).where(ExpenseRow.id == expense_id)).first()
+        return None if row is None else expense_from_row(row)
+
+
+def update(expense_id: int, expense: Expense, *, owner: Owner, engine: Engine | None = None) -> Expense | None:
+    """Replace one of the owner's expenses with these values (it keeps its id and owner).
+
+    None if there is none with this id for this owner.
+    """
+    with database.open_session("save the expense", engine) as session:
+        row = session.exec(_owned_by(select(ExpenseRow), owner).where(ExpenseRow.id == expense_id)).first()
+        if row is None:
+            return None
+        new = row_from_expense(expense, owner)
+        for field in ("amount", "category", "description", "date", "frequency"):
+            setattr(row, field, getattr(new, field))
+        session.add(row)
+        session.commit()
+    expense.id = expense_id
     return expense
 
 
