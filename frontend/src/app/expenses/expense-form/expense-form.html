@@ -16,7 +16,7 @@
         formControlName="description"
         placeholder="Uber to airport"
         autocomplete="off"
-        (blur)="descriptionDone()"
+        (blur)="ai.descriptionDone()"
       />
       @if (showError('description')) {
         <small class="field-error">Please describe the expense.</small>
@@ -47,9 +47,9 @@
     <div class="field">
       <div class="label-row">
         <label for="category">Category</label>
-        @if (form.controls.description.value.trim() && ai() !== 'asking') {
-          <button type="button" class="link suggest" (click)="suggest()">
-            🤖 {{ ai() === 'suggested' ? 'Suggest again' : 'Suggest' }}
+        @if (form.controls.description.value.trim() && ai.state() !== 'asking') {
+          <button type="button" class="link suggest" (click)="ai.suggest()">
+            🤖 {{ ai.state() === 'suggested' ? 'Suggest again' : 'Suggest' }}
           </button>
         }
       </div>
@@ -67,7 +67,7 @@
       </datalist>
       <!-- polite: screen readers announce the AI's answer once it arrives -->
       <small class="hint" aria-live="polite">
-        @switch (ai()) {
+        @switch (ai.state()) {
           @case ('asking') {
             🤖 Asking Gemini… you can keep typing.
           }
@@ -75,7 +75,9 @@
             🤖 Suggested by AI. Change it if it's wrong.
           }
           @case ('failed') {
-            <span class="ai-failed">No AI suggestion: {{ aiError() }} Please pick a category.</span>
+            <span class="ai-failed"
+              >No AI suggestion: {{ ai.error() }} Please pick a category.</span
+            >
           }
           @default {
             Pick one or type your own. Leave it empty and AI suggests one.
