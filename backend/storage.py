@@ -24,12 +24,14 @@ from models import Expense, ExpenseTracker, RecurringExpense
 
 __all__ = [
     "LOCAL",
+    "Owner",
     "StorageError",
     "add",
     "delete",
     "get",
     "list_expenses",
     "load",
+    "owned_by",
     "update",
 ]
 
