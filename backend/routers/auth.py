@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import math
 import os
-from typing import Annotated
+from typing import Annotated, Hashable
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -54,12 +54,17 @@ def _too_many(error: TooManyAttempts) -> HTTPException:
     )
 
 
-def _count_attempt(ip: str) -> None:
-    """Every login or sign-up counts towards the per-IP limit; 429 once it is reached."""
+def _check(limit: RateLimit, key: Hashable) -> None:
+    """429 "Too many attempts" if this key has used up the limit."""
     try:
-        attempts_per_ip.check(ip)
+        limit.check(key)
     except TooManyAttempts as error:
         raise _too_many(error) from None
+
+
+def _count_attempt(ip: str) -> None:
+    """Every login or sign-up counts towards the per-IP limit; 429 once it is reached."""
+    _check(attempts_per_ip, ip)
     attempts_per_ip.hit(ip)
 
 
@@ -80,10 +85,7 @@ def login(form: Annotated[OAuth2PasswordRequestForm, Depends()], http: Request) 
     ip = _client_ip(http)
     _count_attempt(ip)
     key = (ip, users.normalize_email(form.username))
-    try:
-        failed_logins.check(key)  # checked before the password, so guessing stops right here
-    except TooManyAttempts as error:
-        raise _too_many(error) from None
+    _check(failed_logins, key)  # checked before the password, so guessing stops right here
     user = security.authenticate(form.username, form.password)
     if user is None:
         failed_logins.hit(key)
@@ -111,10 +113,7 @@ def change_password(change: PasswordChange, user: CurrentUser, http: Request) ->
     """
     ip = _client_ip(http)
     key = (ip, user.email)  # the same count as failed logins for this email
-    try:
-        failed_logins.check(key)
-    except TooManyAttempts as error:
-        raise _too_many(error) from None
+    _check(failed_logins, key)
     if security.authenticate(user.email, change.current_password) is None:
         failed_logins.hit(key)
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Your current password is wrong.")
