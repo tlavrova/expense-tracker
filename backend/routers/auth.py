@@ -8,14 +8,16 @@ Guessing passwords is slowed down (rate_limit.py), answering 429 "Too many attem
 - at most 5 failed logins per email and IP address within 15 minutes (a success starts over);
 - at most 30 login and sign-up attempts per IP address within 15 minutes, against scripts
   that try many emails.
-Behind a hosting service's proxy, uvicorn must be told which addresses are that proxy
-(FORWARDED_ALLOW_IPS, see the README); otherwise every visitor looks like the proxy. Never "*":
-then uvicorn believes the first X-Forwarded-For entry, which the visitor can make up.
+The visitor's address: behind a hosting service's proxy, the connection comes from the proxy, and
+X-Forwarded-For can't be trusted on Render (it keeps whatever the visitor sends, so the limits could
+be dodged with made-up addresses). Online, CLIENT_IP_HEADER names a header the host's proxy always
+overwrites with the real address: True-Client-IP on Render (set by Cloudflare in front of it).
 """
 
 from __future__ import annotations
 
 import math
+import os
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -35,6 +37,10 @@ attempts_per_ip = RateLimit(limit=30, window=WINDOW)  # key: IP address
 
 
 def _client_ip(request: Request) -> str:
+    """The visitor's address: from CLIENT_IP_HEADER if set (online), else from the connection."""
+    header = os.environ.get("CLIENT_IP_HEADER", "").strip()
+    if header and request.headers.get(header, "").strip():
+        return request.headers[header].strip()
     return request.client.host if request.client else "unknown"
 
 

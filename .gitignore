@@ -3,6 +3,8 @@ __pycache__/
 .venv/
 venv/
 .env
+.env.*
+.neon
 backend/expenses.json
 backend/expenses.json.tmp
 backend/expenses.json.imported
@@ -14,3 +16,10 @@ backend/expenses.db
 node_modules/
 dist/
 .angular/
+
+# Neon tooling (neon init / deploy): local only, the app doesn't use it
+neon.ts
+/package.json
+/package-lock.json
+skills-lock.json
+.claude/

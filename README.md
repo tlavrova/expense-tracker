@@ -1,5 +1,8 @@
 # Expense Tracker
 
+**Live:** https://tlavrova.github.io/expense-tracker/ (the API sleeps when nobody uses it, so the
+first visit after a while takes about a minute).
+
 An app for recording daily expenses, viewing summaries by category and date, and saving data
 between runs. When the category is left empty, AI (Google Gemini, free tier) suggests one from
 the expense description.
@@ -134,22 +137,36 @@ see "Online settings"), so keep the frontend on that port. Where the frontend lo
 set in `frontend/src/environments/environment.ts` (`npm start`) and `environment.prod.ts`
 (`ng build`, the deployed site).
 
-## Online settings
+## Online (deploying)
 
-Locally none of these are needed. On the backend host they are set in its environment settings,
-never in the repo:
+| Part | Where | Updates |
+|---|---|---|
+| Website (Angular) | GitHub Pages: https://tlavrova.github.io/expense-tracker/ | by itself on every merge to `main` that changes `frontend/` |
+| API (FastAPI) | Render, free web service, Frankfurt: https://expense-tracker-xbnh.onrender.com (docs at `/docs`) | Render redeploys by itself on every merge to `main` |
+| Database | Neon, free Postgres, Frankfurt | tables are migrated by the API when it starts |
+
+The free plans have limits: the API sleeps after 15 minutes without visitors (the next visit takes
+about a minute), and Neon's database sleeps after 5 minutes (it wakes in under a second).
+
+Render service settings: root directory `backend`, build command `pip install -r requirements.txt`,
+start command `uvicorn api:app --host 0.0.0.0 --port $PORT`. Its environment variables (set in
+Render's dashboard, never in the repo; locally none of them are needed):
 
 | Variable | Online value |
 |---|---|
-| `DATABASE_URL` | the hosted Postgres address (`postgres://` or `postgresql://`; the API adds the psycopg driver) |
+| `DATABASE_URL` | Neon's **direct** connection string (no `-pooler` in the host: the API runs migrations); the API adds the psycopg driver |
 | `JWT_SECRET` | a random secret, made as in "Login" above |
 | `GEMINI_API_KEY`, `GEMINI_MODEL` | as in "AI key" above |
 | `CORS_ORIGINS` | the website's address, e.g. `https://<user>.github.io` (comma-separated for several) |
-| `FORWARDED_ALLOW_IPS` | the address range of the host's proxy, so the login limits see each visitor's real address |
+| `CLIENT_IP_HEADER` | `True-Client-IP`, so the login limits see each visitor's real address |
+| `PYTHON_VERSION` | `3.12.8` |
 
-Start command: `uvicorn api:app --host 0.0.0.0 --port $PORT` (uvicorn reads
-`FORWARDED_ALLOW_IPS` by itself). Don't set it to `*`: uvicorn would then believe whatever address
-a visitor writes into the `X-Forwarded-For` header, and the login limits could be dodged.
+Why `CLIENT_IP_HEADER`: on Render, requests arrive through Cloudflare and Render's proxy, and the
+usual `X-Forwarded-For` header keeps whatever a visitor writes into it, so the login limits could be
+dodged with made-up addresses. Cloudflare always overwrites `True-Client-IP` with the real one.
+
+`neon init` and `neon deploy` (Neon's CLI) leave local files (`neon.ts`, a root `package.json`,
+`.env.local` with the connection strings); they are git-ignored, and the app doesn't need them.
 
 Every pull request and push to `main` runs the backend and frontend tests on GitHub Actions
 (`.github/workflows/tests.yml`).

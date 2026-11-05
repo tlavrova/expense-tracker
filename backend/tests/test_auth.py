@@ -132,3 +132,18 @@ def test_too_many_attempts_from_one_address(client):
         assert client.post("/auth/signup", json={"email": "x@example.com", "password": "long enough"}).status_code == 429
     finally:
         auth.attempts_per_ip.limit = 30
+
+
+def test_the_address_comes_from_client_ip_header_when_set(client, sign_up, monkeypatch):
+    """Online: the header the host's proxy sets counts, not X-Forwarded-For or the connection."""
+    monkeypatch.setenv("CLIENT_IP_HEADER", "True-Client-IP")
+    sign_up()
+    for n in range(5):  # a made-up X-Forwarded-For each time doesn't reset the count
+        headers = {"True-Client-IP": "203.0.113.7", "X-Forwarded-For": f"198.51.100.{n}"}
+        assert client.post("/auth/login", data={"username": "ana@example.com", "password": "wrong password"},
+                           headers=headers).status_code == 401
+    assert client.post("/auth/login", data={"username": "ana@example.com", "password": "correct horse"},
+                       headers={"True-Client-IP": "203.0.113.7"}).status_code == 429
+    other = client.post("/auth/login", data={"username": "ana@example.com", "password": "correct horse"},
+                        headers={"True-Client-IP": "203.0.113.8"})
+    assert other.status_code == 200  # another visitor isn't locked out
