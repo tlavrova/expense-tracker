@@ -25,6 +25,7 @@ def isolated(tmp_path, monkeypatch) -> Iterator[None]:
     monkeypatch.setenv("JWT_SECRET", TEST_SECRET)
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     monkeypatch.delenv("SQL_ECHO", raising=False)
+    monkeypatch.delenv("CLIENT_IP_HEADER", raising=False)
     monkeypatch.setattr(json_import, "JSON_PATH", tmp_path / "expenses.json")
     database.get_engine.cache_clear()
     auth.failed_logins.reset()

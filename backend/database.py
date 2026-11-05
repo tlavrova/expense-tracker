@@ -86,7 +86,9 @@ def get_engine(url: str | None = None) -> Engine:
     connect_args = {"check_same_thread": False} if url.startswith("sqlite") else {}
     try:
         echo = os.environ.get("SQL_ECHO", "").strip() == "1"
-        engine = create_engine(url, connect_args=connect_args, echo=echo)
+        # pool_pre_ping: a hosted Postgres that sleeps when idle (Neon) closes our open
+        # connections; check each one before use and reconnect instead of failing the request.
+        engine = create_engine(url, connect_args=connect_args, echo=echo, pool_pre_ping=True)
         migrate(engine)
     except SQLAlchemyError as error:
         raise StorageError(f"Can't open the database: {_short(error)}") from error
