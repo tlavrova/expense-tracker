@@ -11,8 +11,8 @@ from routers import auth
 from tests.conftest import TEST_SECRET
 
 
-def login(client, email="ana@example.com", password="correct horse"):
-    return client.post("/auth/login", data={"username": email, "password": password})
+def login(client, email="ana@example.com", password="correct horse", headers=None):
+    return client.post("/auth/login", data={"username": email, "password": password}, headers=headers)
 
 
 def test_sign_up_log_in_and_me(client, sign_up):
@@ -139,11 +139,7 @@ def test_the_address_comes_from_client_ip_header_when_set(client, sign_up, monke
     monkeypatch.setenv("CLIENT_IP_HEADER", "True-Client-IP")
     sign_up()
     for n in range(5):  # a made-up X-Forwarded-For each time doesn't reset the count
-        headers = {"True-Client-IP": "203.0.113.7", "X-Forwarded-For": f"198.51.100.{n}"}
-        assert client.post("/auth/login", data={"username": "ana@example.com", "password": "wrong password"},
-                           headers=headers).status_code == 401
-    assert client.post("/auth/login", data={"username": "ana@example.com", "password": "correct horse"},
-                       headers={"True-Client-IP": "203.0.113.7"}).status_code == 429
-    other = client.post("/auth/login", data={"username": "ana@example.com", "password": "correct horse"},
-                        headers={"True-Client-IP": "203.0.113.8"})
-    assert other.status_code == 200  # another visitor isn't locked out
+        made_up = {"True-Client-IP": "203.0.113.7", "X-Forwarded-For": f"198.51.100.{n}"}
+        assert login(client, password="wrong password", headers=made_up).status_code == 401
+    assert login(client, headers={"True-Client-IP": "203.0.113.7"}).status_code == 429
+    assert login(client, headers={"True-Client-IP": "203.0.113.8"}).status_code == 200  # another visitor
