@@ -15,9 +15,9 @@ from models import Expense
 
 def test_a_new_database_gets_every_table_at_the_latest_migration(tmp_path):
     engine = database.get_engine(f"sqlite:///{tmp_path / 'new.db'}")
-    assert set(inspect(engine).get_table_names()) == {"alembic_version", "expenses", "users"}
+    assert set(inspect(engine).get_table_names()) == {"alembic_version", "budgets", "expenses", "users"}
     with engine.connect() as connection:
-        assert connection.execute(text("select version_num from alembic_version")).scalar() == "0002"
+        assert connection.execute(text("select version_num from alembic_version")).scalar() == "0003"
 
 
 def test_a_stage_8a_database_is_upgraded_and_keeps_its_expenses(tmp_path):

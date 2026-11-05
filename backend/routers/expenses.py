@@ -6,13 +6,13 @@ expenses: another account's expense id answers 404, as if it didn't exist.
 
 from __future__ import annotations
 
-import datetime
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException, Query, Response, status
 
 import storage
 from models import Expense, RecurringExpense
+from routers.params import parse_month
 from schemas import ExpenseOut, NewExpense
 from security import CurrentUser
 
@@ -53,15 +53,7 @@ def list_expenses(
     sort: Literal["amount", "date"] | None = None,
 ) -> list[ExpenseOut]:
     """Your expenses in the order added; optionally only one category and/or month, and sorted."""
-    year_month = None
-    if month:
-        try:
-            first_day = datetime.datetime.strptime(month, "%Y-%m")
-        except ValueError:
-            raise HTTPException(
-                status.HTTP_422_UNPROCESSABLE_CONTENT, "month must be YYYY-MM, for example 2026-11."
-            ) from None
-        year_month = (first_day.year, first_day.month)
+    year_month = parse_month(month)
     expenses = storage.list_expenses(owner=user.id, category=category, year_month=year_month, sort=sort)
     return [to_out(expense) for expense in expenses]
 

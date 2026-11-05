@@ -214,6 +214,10 @@ uses the same database and rules as the command-line app.
 | `PUT /expenses/{id}` | change one: the same body and rules as adding (leave out frequency for a one-off) | the saved expense, or `404` |
 | `DELETE /expenses/{id}` | delete one | `204`, or `404` |
 | `GET /summary` | totals per category and overall | `{"totalsByCategory": {...}, "total": ...}` |
+| `GET /budgets` | your monthly budgets, A to Z | `[{"category": "food", "amount": 300}]` |
+| `PUT /budgets/{category}` | `{"amount": 300}`: set or change a category's monthly budget (the same every month) | the saved budget |
+| `DELETE /budgets/{category}` | remove one | `204`, or `404` |
+| `GET /reports/month?month=2026-11` | spent per category that month, next to each budget | `{"month", "rows": [{"category", "spent", "budget"}], "totalSpent", "totalBudget"}` |
 | `POST /suggest-category` | `{"description": "..."}` → Gemini's category (at most 20 per account per hour) | `{"category": "..."}`, `503` when AI isn't available, or `429` above the limit |
 
 Everything except sign-up and login needs the header `Authorization: Bearer <access_token>`;
@@ -254,12 +258,13 @@ expense-tracker/
 │   ├── database.py      # database connection (DATABASE_URL, SQL_ECHO), table classes, migrations
 │   ├── storage.py       # expense queries for one owner (the CLI, or one account): list, get, add, change, delete
 │   ├── reports.py       # totals for one owner, added up by the database: per category, per month
+│   ├── budgets.py       # one account's monthly budgets: list, set, delete
 │   ├── users.py         # accounts: create, find by email or id
 │   ├── security.py      # password hashing, login tokens (JWT_SECRET), the logged-in user
 │   ├── rate_limit.py    # "at most N times in M minutes", for login and sign-up attempts
 │   ├── limits.py        # the visitor's address (CLIENT_IP_HEADER) and the 429 answer, for the routers
 │   ├── alembic.ini      # Alembic settings (database migrations)
-│   ├── migrations/      # migration scripts: 0001 expenses table, 0002 users + expenses.user_id
+│   ├── migrations/      # migration scripts: 0001 expenses table, 0002 users + expenses.user_id, 0003 budgets
 │   ├── json_import.py   # one-time move of the old expenses.json into the database
 │   ├── ai_helper.py     # AI category suggestion (Gemini)
 │   ├── api.py           # FastAPI app: CORS, error format, includes the routers
@@ -267,7 +272,9 @@ expense-tracker/
 │   ├── routers/
 │   │   ├── auth.py      # /auth/signup, /auth/login, /auth/me
 │   │   ├── expenses.py  # /expenses (login required)
-│   │   ├── reports.py   # /summary (login required)
+│   │   ├── reports.py   # /summary, /reports/month (login required)
+│   │   ├── budgets.py   # /budgets (login required)
+│   │   ├── params.py    # parse_month(): ?month=YYYY-MM, the same for every router
 │   │   └── ai.py        # /suggest-category (login required)
 │   ├── expenses.db      # local SQLite data (git-ignored; created on first start)
 │   ├── expenses.log     # action log from @log_action (git-ignored)

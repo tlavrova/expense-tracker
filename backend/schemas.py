@@ -36,6 +36,37 @@ class Summary(BaseModel):
     total: float
 
 
+class BudgetAmount(BaseModel):
+    """What the frontend sends to set a budget: PUT /budgets/{category}."""
+
+    amount: float
+
+
+class Budget(BudgetAmount):
+    """A category's monthly budget (Budget in expense.model.ts)."""
+
+    category: str
+
+
+class MonthRow(BaseModel):
+    """One category in a month: what was spent, and its budget if it has one."""
+
+    category: str
+    spent: float
+    budget: float | None = None
+
+
+class MonthReport(BaseModel):
+    """GET /reports/month: every category with a budget or with spending that month (MonthReport in expense.model.ts)."""
+
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    month: str  # YYYY-MM
+    rows: list[MonthRow]
+    total_spent: float
+    total_budget: float
+
+
 class SuggestionRequest(BaseModel):
     description: str = Field(min_length=1)
 

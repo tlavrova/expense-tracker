@@ -6,8 +6,8 @@ Which database comes from the DATABASE_URL environment variable:
 
 SQL_ECHO=1 prints every SQL statement SQLModel sends, to see what the query builder produces.
 
-Only the connection and the table classes live here; the queries are in storage.py (expenses)
-and users.py (accounts).
+Only the connection and the table classes live here; the queries are in storage.py (expenses),
+reports.py (totals), users.py (accounts) and budgets.py (budgets).
 
 The tables are created and changed by Alembic migrations (migrations/versions/), which run by
 themselves when the app connects, so an older expenses.db is upgraded on its first start.
@@ -25,7 +25,7 @@ from typing import Iterator
 
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import Connection, Engine, inspect
+from sqlalchemy import Connection, Engine, UniqueConstraint, inspect
 from sqlalchemy.exc import SQLAlchemyError
 from sqlmodel import Field, Session, SQLModel, create_engine
 
@@ -65,6 +65,18 @@ class ExpenseRow(SQLModel, table=True):
     date: Date = Field(index=True)
     frequency: str | None = None
     user_id: int | None = Field(default=None, foreign_key="users.id", index=True)
+
+
+class BudgetRow(SQLModel, table=True):
+    """One account's monthly budget for one category in the "budgets" table (the same every month)."""
+
+    __tablename__ = "budgets"
+    __table_args__ = (UniqueConstraint("user_id", "category", name="uq_budgets_user_id_category"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="users.id", index=True)
+    category: str  # stored lowercase, like the expenses' categories
+    amount: float
 
 
 def database_url() -> str:
