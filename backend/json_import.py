@@ -23,7 +23,7 @@ JSON_PATH = Path(__file__).parent / "expenses.json"
 logger = logging.getLogger("expense_tracker")
 
 
-def import_json(path: Path = JSON_PATH, engine: Engine | None = None) -> int:
+def import_json(path: Path | None = None, engine: Engine | None = None) -> int:
     """Move the expenses from the old expenses.json into the database, once.
 
     Only into an empty database, so nothing is ever imported twice (for example when the app
@@ -31,6 +31,7 @@ def import_json(path: Path = JSON_PATH, engine: Engine | None = None) -> int:
     is renamed to expenses.json.imported so the next start doesn't import it again.
     Returns how many expenses were imported (0: no file, or the database already has expenses).
     """
+    path = path or JSON_PATH  # read here, not as a default, so tests can point it elsewhere
     if not path.exists():
         return 0
     with database.open_session("check the database", engine) as session:

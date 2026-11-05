@@ -1,0 +1,4 @@
+# Only for development: running the tests (pytest). The app itself needs only requirements.txt.
+-r requirements.txt
+pytest
+httpx2  # what FastAPI's TestClient uses
