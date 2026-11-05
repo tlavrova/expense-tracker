@@ -25,6 +25,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+import database
 import json_import
 import security
 import storage
@@ -43,7 +44,10 @@ def allowed_origins() -> list[str]:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     security.jwt_secret()  # stop right away with a clear message if JWT_SECRET is missing
-    json_import.import_json()  # the same one-time move of expenses.json as the CLI; opens the database
+    # Connect and run the migrations now, not on the first request: if one fails, the API doesn't
+    # start, so the host's deploy fails and keeps the previous version running.
+    database.get_engine()
+    json_import.import_json()  # the same one-time move of expenses.json as the CLI
     yield
 
 
