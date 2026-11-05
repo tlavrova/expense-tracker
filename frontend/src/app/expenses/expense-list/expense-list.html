@@ -42,6 +42,12 @@
           <td>{{ expense.category }}</td>
           <td class="amount">{{ expense.amount | number: '1.2-2' }}</td>
           <td class="actions">
+            <a
+              class="edit"
+              [routerLink]="['/expenses', expense.id, 'edit']"
+              [attr.aria-label]="'Edit ' + expense.description"
+              >Edit</a
+            >
             <button
               type="button"
               class="delete"

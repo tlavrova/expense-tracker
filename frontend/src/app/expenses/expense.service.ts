@@ -26,8 +26,18 @@ export class ExpenseService {
     return this.http.get<Expense[]>(`${this.url}/expenses`, { params });
   }
 
+  /** One expense (the edit page loads it); 404 if it isn't the user's own. */
+  get(id: number): Observable<Expense> {
+    return this.http.get<Expense>(`${this.url}/expenses/${id}`);
+  }
+
   add(expense: NewExpense): Observable<Expense> {
     return this.http.post<Expense>(`${this.url}/expenses`, expense);
+  }
+
+  /** Replace an expense with these values (leaving out frequency makes it a one-off). */
+  update(id: number, expense: NewExpense): Observable<Expense> {
+    return this.http.put<Expense>(`${this.url}/expenses/${id}`, expense);
   }
 
   delete(id: number): Observable<void> {

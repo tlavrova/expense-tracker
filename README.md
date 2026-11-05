@@ -272,7 +272,7 @@ expense-tracker/
 │       ├── styles.css                   # colors, form fields, buttons and tables shared by all pages
 │       └── app/
 │           ├── app.ts / app.html   # layout: header + navigation
-│           ├── app.routes.ts       # /login, /signup; /expenses, /expenses/new, /summary need a login
+│           ├── app.routes.ts       # /login, /signup; /expenses, /expenses/new, /expenses/:id/edit, /summary need a login
 │           ├── auth/
 │           │   ├── auth.service.ts # who is logged in; log in, sign up, log out
 │           │   ├── token.ts        # keeping the token between visits (localStorage), reading its expiry
@@ -284,14 +284,14 @@ expense-tracker/
 │           └── expenses/
 │               ├── expense.model.ts    # Expense, NewExpense, Summary, filters; CATEGORIES, FREQUENCIES
 │               ├── expense.service.ts  # the only data source: HttpClient calls to the API
-│               ├── expense-list/       # list with filters (kept in the address), total and delete
+│               ├── expense-list/       # list with filters (kept in the address), total, edit and delete
 │               ├── expense-filter-bar/ # category, month and sort fields above the list
-│               ├── expense-form/       # add form with validation and the AI category suggestion
+│               ├── expense-form/       # add and edit form with validation and the AI category suggestion
 │               └── summary/            # totals per category with their share
 └── README.md
 ```
 
 ## Later
 
-Budget limits with warnings · charts in the Angular UI · editing an expense ·
+Budget limits with warnings · charts in the Angular UI · changing or resetting the password ·
 more AI: natural-language input, monthly summary
