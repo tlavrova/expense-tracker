@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { AuthPage } from './auth/auth-page/auth-page';
+import { PasswordPage } from './auth/password-page/password-page';
 import { loggedInGuard, loggedOutGuard } from './auth/auth.guards';
 import { ExpenseForm } from './expenses/expense-form/expense-form';
 import { ExpenseList } from './expenses/expense-list/expense-list';
@@ -31,6 +32,7 @@ export const routes: Routes = [
       // The same form; ":id" reaches the component as its id input and switches it to editing.
       { path: 'expenses/:id/edit', component: ExpenseForm, title: 'Edit expense' },
       { path: 'summary', component: Summary, title: 'Summary' },
+      { path: 'password', component: PasswordPage, title: 'Change password' },
     ],
   },
   { path: '**', redirectTo: 'expenses' },

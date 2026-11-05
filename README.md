@@ -131,7 +131,8 @@ cd frontend && npm start                 # UI on http://localhost:4200
 ```
 
 The API needs `JWT_SECRET` (see "Login" above). Open http://localhost:4200, create an account,
-and you're logged in; "Log out" is in the header. A login lasts 7 days.
+and you're logged in; "Log out" is in the header, and your email there opens "Change password".
+A login lasts 7 days.
 
 The API only accepts calls from `http://localhost:4200` (unless `CORS_ORIGINS` says otherwise,
 see "Online settings"), so keep the frontend on that port. Where the frontend looks for the API is
@@ -274,12 +275,13 @@ expense-tracker/
 │       ├── styles.css                   # colors, form fields, buttons and tables shared by all pages
 │       └── app/
 │           ├── app.ts / app.html   # layout: header + navigation
-│           ├── app.routes.ts       # /login, /signup; /expenses, /expenses/new, /expenses/:id/edit, /summary need a login
+│           ├── app.routes.ts       # /login, /signup; /expenses, /expenses/new, /expenses/:id/edit, /summary, /password need a login
 │           ├── auth/
 │           │   ├── auth.service.ts # who is logged in; log in, sign up, log out
 │           │   ├── token.ts        # keeping the token between visits (localStorage), reading its expiry
 │           │   ├── auth.guards.ts  # logged out → login page (and back afterwards); logged in → past it
-│           │   └── auth-page/      # the login and sign-up page (one form, two modes)
+│           │   ├── auth-page/      # the login and sign-up page (one form, two modes)
+│           │   └── password-page/  # change the password (the email in the header links here)
 │           ├── core/
 │           │   ├── api-error.ts        # turns a failed API call into a sentence for the page
 │           │   └── auth.interceptor.ts # adds the token to API calls only; a 401 logs out
@@ -295,5 +297,5 @@ expense-tracker/
 
 ## Later
 
-Budget limits with warnings · charts in the Angular UI · changing or resetting the password ·
+Budget limits with warnings · charts in the Angular UI · resetting a forgotten password (by email) ·
 more AI: natural-language input, monthly summary
