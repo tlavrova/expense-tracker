@@ -109,7 +109,8 @@ own expenses, separate from the website accounts.
 
 Password guessing is slowed down: after 5 wrong passwords for one email from one address, or 30
 login and sign-up attempts from one address, within 15 minutes, the API answers "Too many
-attempts. Try again in N minutes."
+attempts. Try again in N minutes." A wrong current password when changing it (`POST /auth/password`)
+counts as a wrong password too.
 
 ## Run
 
@@ -203,6 +204,7 @@ uses the same database and rules as the command-line app.
 | `POST /auth/signup` | `{"email": "...", "password": "..."}` (8+ characters); creates an account and logs in | `201` + `{"access_token": "...", "token_type": "bearer"}`, or `409` if the email has an account |
 | `POST /auth/login` | form fields `username` (the email) and `password` | the same token, or `401` |
 | `GET /auth/me` | who is logged in | `{"id": 1, "email": "..."}` |
+| `POST /auth/password` | `{"current_password": "...", "new_password": "..."}` (8+ characters) | `204`, or `400` if the current one is wrong |
 | `GET /expenses` | your expenses; optional `?category=food`, `?month=2026-11`, `?sort=amount` or `date` | list |
 | `POST /expenses` | add one (amount, category, description, date, optional frequency) | `201` + the saved expense with its `id` |
 | `GET /expenses/{id}` | one of your expenses | the expense, or `404` |

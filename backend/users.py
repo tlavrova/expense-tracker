@@ -1,4 +1,4 @@
-"""Accounts for the website: create one, and find one by email or id.
+"""Accounts for the website: create one, find one by email or id, change its password.
 
 Passwords never reach the database: only security.hash_password()'s hash is stored.
 """
@@ -46,3 +46,14 @@ def find_by_email(email: str, engine: Engine | None = None) -> UserRow | None:
 def get(user_id: int, engine: Engine | None = None) -> UserRow | None:
     with database.open_session("read the account", engine) as session:
         return session.get(UserRow, user_id)
+
+
+def set_password_hash(user_id: int, password_hash: str, engine: Engine | None = None) -> None:
+    """Replace the account's password hash (changing the password)."""
+    with database.open_session("change the password", engine) as session:
+        row = session.get(UserRow, user_id)
+        if row is None:
+            raise database.StorageError(f"Can't change the password: no account with id {user_id}.")
+        row.password_hash = password_hash
+        session.add(row)
+        session.commit()
