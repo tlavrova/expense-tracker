@@ -34,11 +34,11 @@ export function today(now = new Date()): string {
 
 @Component({
   imports: [ReactiveFormsModule],
-  selector: 'app-add-expense',
-  styleUrl: './add-expense.css',
-  templateUrl: './add-expense.html',
+  selector: 'app-expense-form',
+  styleUrl: './expense-form.css',
+  templateUrl: './expense-form.html',
 })
-export class AddExpense {
+export class ExpenseForm {
   private readonly expenseService = inject(ExpenseService);
   private readonly router = inject(Router);
 
