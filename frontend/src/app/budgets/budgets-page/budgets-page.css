@@ -37,7 +37,9 @@
 }
 
 .bar {
-  width: calc(100% - 7rem); /* room for "42.50 left" */
+  display: block; /* its own line above "42.50 left", so it never shrinks to nothing */
+  width: 100%;
+  margin: 0 0 0.25rem;
 }
 
 .status {
@@ -104,4 +106,41 @@ h2 {
   align-items: center;
   gap: 0.75rem;
   padding: 0.25rem 0;
+}
+
+.of-budget {
+  display: none;
+}
+
+.all-spending {
+  margin: 0.75rem 0 0;
+  color: var(--muted);
+}
+
+/* Phones: four columns instead of five, so nothing is cut off */
+@media (max-width: 40rem) {
+  .budget-column {
+    display: none;
+  }
+
+  .of-budget {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--muted);
+  }
+
+  .table th,
+  .table td {
+    padding: 0.5rem 0.4rem;
+  }
+
+  .actions .link {
+    display: block;
+    margin: 0 0 0.25rem auto;
+  }
+
+  .actions .link + .link {
+    margin-left: auto;
+  }
 }

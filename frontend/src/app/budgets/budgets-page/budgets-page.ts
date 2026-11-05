@@ -64,6 +64,10 @@ export class BudgetsPage {
         used: Math.min(row.spent / row.budget!, 1),
       })),
   );
+  /** What the budgeted categories spent (the Total row compares it with the total budget). */
+  protected readonly budgetedSpent = computed(() =>
+    this.budgeted().reduce((sum, row) => sum + row.spent, 0),
+  );
   protected readonly unbudgeted = computed(() =>
     (this.report()?.rows ?? []).filter((row) => row.budget === null),
   );

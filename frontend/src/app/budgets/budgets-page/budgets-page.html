@@ -53,7 +53,7 @@
       <tr>
         <th scope="col">Category</th>
         <th scope="col" class="amount">Spent</th>
-        <th scope="col" class="amount">Budget</th>
+        <th scope="col" class="amount budget-column">Budget</th>
         <th scope="col" class="used-column">Used</th>
         <th scope="col"><span class="visually-hidden">Actions</span></th>
       </tr>
@@ -68,11 +68,15 @@
               >{{ row.category }}</a
             >
           </th>
-          <td class="amount">{{ row.spent | number: '1.2-2' }}</td>
+          <td class="amount">
+            {{ row.spent | number: '1.2-2' }}
+            <!-- narrow screens: the Budget column is hidden, the budget shows here -->
+            <span class="of-budget">of {{ row.budget | number: '1.2-2' }}</span>
+          </td>
           @if (editing() === row.category) {
             <td colspan="3"><ng-container [ngTemplateOutlet]="amountField" /></td>
           } @else {
-            <td class="amount">{{ row.budget | number: '1.2-2' }}</td>
+            <td class="amount budget-column">{{ row.budget | number: '1.2-2' }}</td>
             <td class="used-column">
               <span class="bar" aria-hidden="true"
                 ><span [style.width.%]="row.used * 100"></span
@@ -128,14 +132,20 @@
     <tfoot>
       <tr>
         <th scope="row">Total</th>
-        <td class="amount total">{{ data.totalSpent | number: '1.2-2' }}</td>
-        <td class="amount">{{ data.totalBudget | number: '1.2-2' }}</td>
+        <td class="amount total">
+          {{ budgetedSpent() | number: '1.2-2' }}
+          <span class="of-budget">of {{ data.totalBudget | number: '1.2-2' }}</span>
+        </td>
+        <td class="amount budget-column">{{ data.totalBudget | number: '1.2-2' }}</td>
         <td colspan="2"></td>
       </tr>
     </tfoot>
   </table>
 
   @if (unbudgeted().length) {
+    <p class="all-spending">
+      All spending this month: <strong>{{ data.totalSpent | number: '1.2-2' }}</strong>
+    </p>
     <h2>Spent without a budget</h2>
     <ul class="unbudgeted">
       @for (row of unbudgeted(); track row.category) {
