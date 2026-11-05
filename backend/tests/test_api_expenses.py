@@ -99,3 +99,12 @@ def test_cors_lets_the_angular_dev_server_send_the_token(client):
     assert answer.headers["access-control-allow-origin"] == "http://localhost:4200"
     other = client.options("/expenses", headers={"Origin": "https://evil.example", "Access-Control-Request-Method": "GET"})
     assert "access-control-allow-origin" not in other.headers
+
+
+def test_cors_origins_come_from_the_environment(monkeypatch):
+    import api
+
+    monkeypatch.delenv("CORS_ORIGINS", raising=False)
+    assert api.allowed_origins() == ["http://localhost:4200"]
+    monkeypatch.setenv("CORS_ORIGINS", " https://someone.github.io/ , http://localhost:4200,")
+    assert api.allowed_origins() == ["https://someone.github.io", "http://localhost:4200"]

@@ -17,6 +17,7 @@ uvicorn logs each request, so the endpoints don't use @log_action.
 
 from __future__ import annotations
 
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -29,8 +30,14 @@ import security
 import storage
 from routers import auth, expenses
 
-# Where the Angular dev server runs (npm start). The deployed site is added in stage 13.
-ALLOWED_ORIGINS = ["http://localhost:4200"]
+# Where the Angular dev server runs (npm start). Online, CORS_ORIGINS names the deployed site.
+DEV_ORIGIN = "http://localhost:4200"
+
+
+def allowed_origins() -> list[str]:
+    """The sites whose pages may call the API: CORS_ORIGINS (comma-separated), or the dev server."""
+    origins = [o.strip().rstrip("/") for o in os.environ.get("CORS_ORIGINS", "").split(",")]
+    return [o for o in origins if o] or [DEV_ORIGIN]
 
 
 @asynccontextmanager
@@ -43,7 +50,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Expense Tracker API", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=allowed_origins(),
     allow_methods=["GET", "POST", "DELETE"],
     allow_headers=["Content-Type", "Authorization"],
 )

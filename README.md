@@ -100,11 +100,13 @@ echo "export JWT_SECRET=$(python3 -c 'import secrets; print(secrets.token_urlsaf
 source ~/.zshrc
 ```
 
-Changing the secret logs everyone out. Password guessing is slowed down: after 5 wrong passwords
-for one email from one address, or 30 login and sign-up attempts from one address, within 15
-minutes, the API answers "Too many attempts. Try again in N minutes." Online (stage 13) it goes into the hosting service's
-settings instead. The command-line app doesn't need it: it stays a local tool with its own
-expenses, separate from the website accounts.
+Changing the secret logs everyone out. Online (stage 13) the secret goes into the hosting
+service's settings instead. The command-line app doesn't need it: it stays a local tool with its
+own expenses, separate from the website accounts.
+
+Password guessing is slowed down: after 5 wrong passwords for one email from one address, or 30
+login and sign-up attempts from one address, within 15 minutes, the API answers "Too many
+attempts. Try again in N minutes."
 
 ## Run
 
@@ -127,8 +129,30 @@ cd frontend && npm start                 # UI on http://localhost:4200
 The API needs `JWT_SECRET` (see "Login" above). Open http://localhost:4200, create an account,
 and you're logged in; "Log out" is in the header. A login lasts 7 days.
 
-The API only accepts calls from `http://localhost:4200`, so keep the frontend on that port.
-Where the frontend looks for the API is set in `frontend/src/environments/environment.ts`.
+The API only accepts calls from `http://localhost:4200` (unless `CORS_ORIGINS` says otherwise,
+see "Online settings"), so keep the frontend on that port. Where the frontend looks for the API is
+set in `frontend/src/environments/environment.ts` (`npm start`) and `environment.prod.ts`
+(`ng build`, the deployed site).
+
+## Online settings
+
+Locally none of these are needed. On the backend host they are set in its environment settings,
+never in the repo:
+
+| Variable | Online value |
+|---|---|
+| `DATABASE_URL` | the hosted Postgres address (`postgres://` or `postgresql://`; the API adds the psycopg driver) |
+| `JWT_SECRET` | a random secret, made as in "Login" above |
+| `GEMINI_API_KEY`, `GEMINI_MODEL` | as in "AI key" above |
+| `CORS_ORIGINS` | the website's address, e.g. `https://<user>.github.io` (comma-separated for several) |
+| `FORWARDED_ALLOW_IPS` | the address range of the host's proxy, so the login limits see each visitor's real address |
+
+Start command: `uvicorn api:app --host 0.0.0.0 --port $PORT` (uvicorn reads
+`FORWARDED_ALLOW_IPS` by itself). Don't set it to `*`: uvicorn would then believe whatever address
+a visitor writes into the `X-Forwarded-For` header, and the login limits could be dodged.
+
+Every pull request and push to `main` runs the backend and frontend tests on GitHub Actions
+(`.github/workflows/tests.yml`).
 
 ## Tests
 
@@ -186,6 +210,7 @@ exist. Errors always look like `{"detail": "a readable message"}` (`422` for inv
 
 ```
 expense-tracker/
+├── .github/workflows/tests.yml  # runs both test suites on every pull request
 ├── backend/
 │   ├── main.py          # CLI start: logging, load data, menu loop
 │   ├── screens.py       # one function per menu option
@@ -210,11 +235,11 @@ expense-tracker/
 │   ├── expenses.log     # action log from @log_action (git-ignored)
 │   ├── tests/           # pytest: one temporary database per test, Gemini never called
 │   ├── pytest.ini       # where the tests are
-│   ├── requirements.txt # google-genai, fastapi, uvicorn, sqlmodel, alembic, pwdlib, PyJWT, …
+│   ├── requirements.txt # google-genai, fastapi, uvicorn, sqlmodel, alembic, pwdlib, PyJWT, psycopg, …
 │   └── requirements-dev.txt # + pytest and httpx2, for the tests
 ├── frontend/            # Angular 22 app
 │   └── src/
-│       ├── environments/environment.ts  # apiUrl: where the API runs
+│       ├── environments/environment.ts  # apiUrl: where the API runs (environment.prod.ts online)
 │       ├── styles.css                   # colors, form fields, buttons and tables shared by all pages
 │       └── app/
 │           ├── app.ts / app.html   # layout: header + navigation

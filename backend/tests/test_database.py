@@ -85,3 +85,14 @@ def test_a_broken_json_file_is_reported(tmp_path):
     path.write_text("[not json", encoding="utf-8")
     with pytest.raises(storage.StorageError, match="Can't read"):
         json_import.import_json(path)
+
+
+@pytest.mark.parametrize("given", ["postgres://u:p@host/db", "postgresql://u:p@host/db"])
+def test_a_postgres_url_uses_the_psycopg_driver(monkeypatch, given):
+    monkeypatch.setenv("DATABASE_URL", given)
+    assert database.database_url() == "postgresql+psycopg://u:p@host/db"
+
+
+def test_a_url_that_names_its_driver_is_kept(monkeypatch):
+    monkeypatch.setenv("DATABASE_URL", "postgresql+psycopg://u:p@host/db")
+    assert database.database_url() == "postgresql+psycopg://u:p@host/db"
