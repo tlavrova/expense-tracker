@@ -17,7 +17,7 @@
       <a routerLink="/summary" routerLinkActive="active">Summary</a>
     </nav>
     <div class="account">
-      <span class="email">{{ auth.email() }}</span>
+      <a class="email" routerLink="/password" title="Change password">{{ auth.email() }}</a>
       <button type="button" class="logout" (click)="auth.logout()">Log out</button>
     </div>
   }

@@ -50,6 +50,12 @@
 .email {
   font-size: 0.9rem;
   color: var(--muted);
+  text-decoration: none;
+}
+
+.email:hover {
+  color: var(--text);
+  text-decoration: underline;
 }
 
 .logout {

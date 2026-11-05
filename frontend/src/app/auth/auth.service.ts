@@ -54,6 +54,14 @@ export class AuthService {
     );
   }
 
+  /** Change the password; the current one must be right (400 with the reason if not). */
+  changePassword(currentPassword: string, newPassword: string): Observable<void> {
+    return this.http.post<void>(`${this.url}/password`, {
+      current_password: currentPassword,
+      new_password: newPassword,
+    });
+  }
+
   /** Forget the token and go to the login page, optionally saying why. */
   logout(notice = ''): void {
     // Several calls can fail at once with 401 (the page's data and /auth/me): log out only once,

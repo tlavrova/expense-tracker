@@ -34,6 +34,7 @@ describe('App', () => {
     );
     expect(links).toEqual(['Expenses', 'Add expense', 'Summary']);
     expect(page.querySelector('.email')?.textContent).toBe('ana@example.com');
+    expect(page.querySelector('.email')?.getAttribute('href')).toBe('/password'); // change password
     expect(page.querySelector('button.logout')).not.toBeNull();
   });
 

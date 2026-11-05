@@ -81,6 +81,19 @@ describe('AuthService', () => {
     http.expectOne(`${api}/auth/me`).flush({ id: 1, email: 'ana@example.com' });
   });
 
+  it('changes the password with POST /auth/password', async () => {
+    const { auth, http } = setup();
+    const done = firstValueFrom(auth.changePassword('old one!', 'new one!!'));
+    const request = http.expectOne(`${api}/auth/password`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({
+      current_password: 'old one!',
+      new_password: 'new one!!',
+    });
+    request.flush(null, { status: 204, statusText: 'No Content' });
+    await done;
+  });
+
   it('keeps nothing when the login fails', async () => {
     const { auth, http } = setup();
     const done = firstValueFrom(auth.login('ana@example.com', 'wrong'));
