@@ -1,4 +1,5 @@
 .header {
+  position: relative; /* the phone account menu opens below it */
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -77,4 +78,70 @@
   max-width: 56rem;
   margin: 0 auto;
   padding: 1.5rem 1rem;
+}
+
+.menu-toggle,
+.short {
+  display: none;
+}
+
+/* Phones: two rows (name + ☰, then the four pages); email and Log out open from ☰ */
+@media (max-width: 40rem) {
+  .header {
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .menu-toggle {
+    display: block;
+    margin-left: auto;
+    padding: 0.25rem 0.6rem;
+    font: inherit;
+    font-size: 1.2rem;
+    line-height: 1;
+    color: var(--text);
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  .nav {
+    flex-basis: 100%;
+    flex-wrap: nowrap;
+  }
+
+  .nav a {
+    flex: 1;
+    padding: 0.4rem 0.25rem;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .long {
+    display: none;
+  }
+
+  .short {
+    display: inline;
+  }
+
+  .account {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0.75rem;
+    z-index: 1;
+    flex-direction: column;
+    align-items: flex-end;
+    padding: 0.75rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgb(0 0 0 / 0.15);
+  }
+
+  .account.open {
+    display: flex;
+  }
 }

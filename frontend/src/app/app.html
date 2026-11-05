@@ -1,6 +1,17 @@
-<header class="header">
+<header class="header" (keydown.escape)="menuOpen.set(false)">
   <a class="brand" routerLink="/">Expense Tracker</a>
   @if (auth.loggedIn()) {
+    <!-- Phones: the account items (email, log out) fold away behind this button -->
+    <button
+      type="button"
+      class="menu-toggle"
+      aria-label="Account menu"
+      aria-controls="account-menu"
+      [attr.aria-expanded]="menuOpen()"
+      (click)="menuOpen.set(!menuOpen())"
+    >
+      ☰
+    </button>
     <nav class="nav" aria-label="Main">
       <a
         routerLink="/expenses"
@@ -13,11 +24,13 @@
         }"
         >Expenses</a
       >
-      <a routerLink="/expenses/new" routerLinkActive="active">Add expense</a>
+      <a routerLink="/expenses/new" routerLinkActive="active"
+        ><span class="long">Add expense</span><span class="short">+ Add</span></a
+      >
       <a routerLink="/summary" routerLinkActive="active">Summary</a>
       <a routerLink="/budgets" routerLinkActive="active">Budgets</a>
     </nav>
-    <div class="account">
+    <div class="account" id="account-menu" [class.open]="menuOpen()">
       <a class="email" routerLink="/password" title="Change password">{{ auth.email() }}</a>
       <button type="button" class="logout" (click)="auth.logout()">Log out</button>
     </div>
