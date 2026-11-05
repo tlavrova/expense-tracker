@@ -3,17 +3,17 @@ import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { Subject, of, throwError } from 'rxjs';
 import { ExpenseService } from '../expense.service';
-import { AddExpense, today } from './add-expense';
+import { ExpenseForm, today } from './expense-form';
 
 async function render(
   add: ExpenseService['add'],
   suggestCategory: ExpenseService['suggestCategory'] = vi.fn(),
 ) {
   await TestBed.configureTestingModule({
-    imports: [AddExpense],
+    imports: [ExpenseForm],
     providers: [provideRouter([]), { provide: ExpenseService, useValue: { add, suggestCategory } }],
   }).compileComponents();
-  const fixture = TestBed.createComponent(AddExpense);
+  const fixture = TestBed.createComponent(ExpenseForm);
   await fixture.whenStable();
   const page = fixture.nativeElement as HTMLElement;
   const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
@@ -40,7 +40,7 @@ async function render(
   return { page, navigate, type, submit, leave, value, hint, fixture };
 }
 
-describe('AddExpense', () => {
+describe('ExpenseForm', () => {
   it("starts with today's date", async () => {
     const { page } = await render(vi.fn());
     expect(page.querySelector<HTMLInputElement>('[formControlName=date]')!.value).toBe(today());
@@ -140,7 +140,7 @@ describe('today()', () => {
   });
 });
 
-describe('AddExpense: AI category suggestion', () => {
+describe('ExpenseForm: AI category suggestion', () => {
   it('asks when the description is left with no category, and fills in the answer', async () => {
     const suggest = vi.fn(() => of('transport'));
     const { type, leave, value, hint } = await render(vi.fn(), suggest);

@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
 import { AuthPage } from './auth/auth-page/auth-page';
 import { loggedInGuard, loggedOutGuard } from './auth/auth.guards';
-import { AddExpense } from './expenses/add-expense/add-expense';
+import { ExpenseForm } from './expenses/expense-form/expense-form';
 import { ExpenseList } from './expenses/expense-list/expense-list';
 import { Summary } from './expenses/summary/summary';
 
@@ -27,7 +27,7 @@ export const routes: Routes = [
     canActivateChild: [loggedInGuard], // everything below needs a login
     children: [
       { path: 'expenses', component: ExpenseList, title: 'Expenses' },
-      { path: 'expenses/new', component: AddExpense, title: 'Add expense' },
+      { path: 'expenses/new', component: ExpenseForm, title: 'Add expense' },
       { path: 'summary', component: Summary, title: 'Summary' },
     ],
   },
