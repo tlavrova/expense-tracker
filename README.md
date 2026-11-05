@@ -154,6 +154,14 @@ a visitor writes into the `X-Forwarded-For` header, and the login limits could b
 Every pull request and push to `main` runs the backend and frontend tests on GitHub Actions
 (`.github/workflows/tests.yml`).
 
+The website (the Angular app) is published to GitHub Pages at
+https://tlavrova.github.io/expense-tracker/ by `.github/workflows/deploy-frontend.yml`, on every
+push to `main` that changes `frontend/` (or by hand: Actions → Deploy frontend → Run workflow).
+The production build uses the base path `/expense-tracker/` and `environment.prod.ts`. GitHub
+Pages can't send every address to `index.html`, so the workflow copies it to `404.html`: a
+refreshed `/expense-tracker/summary` still opens the app. This needs Settings → Pages → Source
+set to "GitHub Actions" once.
+
 ## Tests
 
 Neither needs the servers running, a Gemini key or internet: the backend tests use a temporary
@@ -210,7 +218,9 @@ exist. Errors always look like `{"detail": "a readable message"}` (`422` for inv
 
 ```
 expense-tracker/
-├── .github/workflows/tests.yml  # runs both test suites on every pull request
+├── .github/workflows/
+│   ├── tests.yml                # runs both test suites on every pull request
+│   └── deploy-frontend.yml      # publishes the Angular app to GitHub Pages
 ├── backend/
 │   ├── main.py          # CLI start: logging, load data, menu loop
 │   ├── screens.py       # one function per menu option
