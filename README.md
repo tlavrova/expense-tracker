@@ -281,13 +281,17 @@ expense-tracker/
 │       ├── styles.css                   # colors, form fields, buttons and tables shared by all pages
 │       └── app/
 │           ├── app.ts / app.html   # layout: header + navigation
-│           ├── app.routes.ts       # /login, /signup; /expenses, /expenses/new, /expenses/:id/edit, /summary, /password need a login
+│           ├── app.routes.ts       # /login, /signup; /expenses, /expenses/new, /expenses/:id/edit, /summary, /budgets, /password need a login
 │           ├── auth/
 │           │   ├── auth.service.ts # who is logged in; log in, sign up, log out
 │           │   ├── token.ts        # keeping the token between visits (localStorage), reading its expiry
 │           │   ├── auth.guards.ts  # logged out → login page (and back afterwards); logged in → past it
 │           │   ├── auth-page/      # the login and sign-up page (one form, two modes)
 │           │   └── password-page/  # change the password (the email in the header links here)
+│           ├── budgets/
+│           │   ├── budget.model.ts   # Budget, MonthRow, MonthReport
+│           │   ├── budget.service.ts # /budgets and /reports/month
+│           │   └── budgets-page/     # one month: spent vs budget per category, set/change/remove in place
 │           ├── core/
 │           │   ├── api-error.ts        # turns a failed API call into a sentence for the page
 │           │   └── auth.interceptor.ts # adds the token to API calls only; a 401 logs out
@@ -303,5 +307,5 @@ expense-tracker/
 
 ## Later
 
-Budget limits with warnings · charts in the Angular UI · resetting a forgotten password (by email) ·
+A warning in the add form when an expense goes over budget · charts in the Angular UI · resetting a forgotten password (by email) ·
 more AI: natural-language input, monthly summary

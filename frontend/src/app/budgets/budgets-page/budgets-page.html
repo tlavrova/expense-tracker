@@ -1,0 +1,153 @@
+<h1>Budgets</h1>
+
+<div class="month">
+  <button type="button" class="step" aria-label="Previous month" (click)="go(-1)">‹</button>
+  <strong>{{ shownDate() | date: 'MMMM y' }}</strong>
+  <button type="button" class="step" aria-label="Next month" (click)="go(1)">›</button>
+  @if (shown() !== thisMonth) {
+    <a routerLink="/budgets">This month</a>
+  }
+</div>
+
+<!-- The amount field, shared by the rows: change a budget, set one, or add a new one. -->
+<ng-template #amountField>
+  <span class="edit">
+    <input
+      [formControl]="amount"
+      type="number"
+      inputmode="decimal"
+      step="0.01"
+      min="0.01"
+      placeholder="300"
+      aria-label="Monthly budget"
+      (keydown.enter)="save()"
+    />
+    <button type="button" class="primary small" [disabled]="saving()" (click)="save()">
+      {{ saving() ? 'Saving…' : 'Save' }}
+    </button>
+    <button type="button" class="link" (click)="cancel()">Cancel</button>
+  </span>
+  @if (amount.invalid && amount.touched) {
+    <small class="field-error">Please enter an amount greater than zero.</small>
+  }
+  @if (saveError()) {
+    <small class="field-error" role="alert">{{ saveError() }}</small>
+  }
+</ng-template>
+
+@if (error()) {
+  <p class="error" role="alert">
+    {{ error() }}
+    <button type="button" class="link" (click)="load()">Try again</button>
+  </p>
+}
+
+@let data = report();
+@if (data === null) {
+  @if (!error()) {
+    <p class="muted">Loading…</p>
+  }
+} @else {
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col">Category</th>
+        <th scope="col" class="amount">Spent</th>
+        <th scope="col" class="amount">Budget</th>
+        <th scope="col" class="used-column">Used</th>
+        <th scope="col"><span class="visually-hidden">Actions</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (row of budgeted(); track row.category) {
+        <tr [class.over]="row.left < 0">
+          <th scope="row">
+            <a
+              [routerLink]="['/expenses']"
+              [queryParams]="{ category: row.category, month: shown() }"
+              >{{ row.category }}</a
+            >
+          </th>
+          <td class="amount">{{ row.spent | number: '1.2-2' }}</td>
+          @if (editing() === row.category) {
+            <td colspan="3"><ng-container [ngTemplateOutlet]="amountField" /></td>
+          } @else {
+            <td class="amount">{{ row.budget | number: '1.2-2' }}</td>
+            <td class="used-column">
+              <span class="bar" aria-hidden="true"
+                ><span [style.width.%]="row.used * 100"></span
+              ></span>
+              <span class="status">
+                @if (row.left < 0) {
+                  over by {{ -row.left | number: '1.2-2' }}
+                } @else {
+                  {{ row.left | number: '1.2-2' }} left
+                }
+              </span>
+            </td>
+            <td class="actions">
+              <button type="button" class="link" (click)="edit(row.category, row.budget)">
+                Change
+              </button>
+              <button type="button" class="link remove" (click)="remove(row.category)">
+                Remove
+              </button>
+            </td>
+          }
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="5" class="muted">No budgets yet. Add one below.</td>
+        </tr>
+      }
+      <tr>
+        @if (editing() === '') {
+          <th scope="row">
+            <input
+              [formControl]="newCategory"
+              list="budget-categories"
+              placeholder="food"
+              aria-label="Category"
+              autocomplete="off"
+            />
+            <datalist id="budget-categories">
+              @for (category of categories; track category) {
+                <option [value]="category"></option>
+              }
+            </datalist>
+          </th>
+          <td></td>
+          <td colspan="3"><ng-container [ngTemplateOutlet]="amountField" /></td>
+        } @else {
+          <td colspan="5">
+            <button type="button" class="link" (click)="edit('')">+ Add a budget</button>
+          </td>
+        }
+      </tr>
+    </tbody>
+    <tfoot>
+      <tr>
+        <th scope="row">Total</th>
+        <td class="amount total">{{ data.totalSpent | number: '1.2-2' }}</td>
+        <td class="amount">{{ data.totalBudget | number: '1.2-2' }}</td>
+        <td colspan="2"></td>
+      </tr>
+    </tfoot>
+  </table>
+
+  @if (unbudgeted().length) {
+    <h2>Spent without a budget</h2>
+    <ul class="unbudgeted">
+      @for (row of unbudgeted(); track row.category) {
+        <li>
+          <span>{{ row.category }}: {{ row.spent | number: '1.2-2' }}</span>
+          @if (editing() === row.category) {
+            <ng-container [ngTemplateOutlet]="amountField" />
+          } @else {
+            <button type="button" class="link" (click)="edit(row.category)">Set budget</button>
+          }
+        </li>
+      }
+    </ul>
+  }
+}
