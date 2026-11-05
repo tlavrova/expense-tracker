@@ -32,7 +32,7 @@ describe('App', () => {
     const links = Array.from(page.querySelectorAll('nav a')).map((link) =>
       link.textContent?.trim(),
     );
-    expect(links).toEqual(['Expenses', 'Add expense', 'Summary']);
+    expect(links).toEqual(['Expenses', 'Add expense', 'Summary', 'Budgets']);
     expect(page.querySelector('.email')?.textContent).toBe('ana@example.com');
     expect(page.querySelector('.email')?.getAttribute('href')).toBe('/password'); // change password
     expect(page.querySelector('button.logout')).not.toBeNull();

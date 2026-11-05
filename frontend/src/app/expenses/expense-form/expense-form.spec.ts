@@ -3,7 +3,8 @@ import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { Subject, of, throwError } from 'rxjs';
 import { ExpenseService } from '../expense.service';
-import { ExpenseForm, today } from './expense-form';
+import { today } from '../../core/dates';
+import { ExpenseForm } from './expense-form';
 
 async function render(
   add: ExpenseService['add'],
@@ -216,12 +217,6 @@ describe('ExpenseForm: editing', () => {
     expect(page.querySelector('[role=alert]')?.textContent).toContain('No expense with id 7.');
     expect(page.querySelector('form')).toBeNull();
     expect(page.querySelector('a[href="/expenses"]')?.textContent).toBe('Back to the list');
-  });
-});
-
-describe('today()', () => {
-  it('uses the local date, padded', () => {
-    expect(today(new Date(2026, 0, 5, 23, 30))).toBe('2026-01-05');
   });
 });
 

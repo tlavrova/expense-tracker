@@ -11,6 +11,7 @@ import {
 import { Router, RouterLink } from '@angular/router';
 import { Observable, Subscription } from 'rxjs';
 import { apiErrorMessage } from '../../core/api-error';
+import { today } from '../../core/dates';
 import { CATEGORIES, Expense, FREQUENCIES, Frequency, NewExpense } from '../expense.model';
 import { ExpenseService } from '../expense.service';
 
@@ -23,13 +24,6 @@ function notBlank(control: AbstractControl<string>): ValidationErrors | null {
 function positive(control: AbstractControl<number | null>): ValidationErrors | null {
   const value = control.value;
   return value === null || value > 0 ? null : { positive: true };
-}
-
-/** Today as YYYY-MM-DD in the user's own time zone (toISOString() would use UTC). */
-export function today(now = new Date()): string {
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${now.getFullYear()}-${month}-${day}`;
 }
 
 /**

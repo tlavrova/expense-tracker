@@ -52,10 +52,6 @@
   color: var(--muted);
 }
 
-.field-error {
-  color: var(--danger);
-}
-
 .primary {
   width: 100%;
 }

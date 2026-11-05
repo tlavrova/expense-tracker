@@ -16,21 +16,7 @@
 }
 
 .bar {
-  display: inline-block;
-  width: calc(100% - 3.5rem);
-  height: 0.5rem;
-  margin-right: 0.5rem;
-  vertical-align: middle;
-  background: var(--hover);
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.bar > span {
-  display: block;
-  height: 100%;
-  background: var(--accent);
-  border-radius: 999px;
+  width: calc(100% - 3.5rem); /* room for the percent */
 }
 
 .percent {

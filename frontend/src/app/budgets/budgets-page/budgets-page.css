@@ -1,0 +1,107 @@
+:host {
+  display: block;
+  overflow-x: auto;
+}
+
+.month {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.step {
+  padding: 0.2rem 0.6rem;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.step:hover {
+  background: var(--hover);
+}
+
+.table tbody th {
+  font-weight: 400;
+}
+
+.table tbody th a {
+  color: inherit;
+}
+
+.used-column {
+  width: 35%;
+}
+
+.bar {
+  width: calc(100% - 7rem); /* room for "42.50 left" */
+}
+
+.status {
+  font-size: 0.85rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.over .bar > span {
+  background: var(--danger);
+}
+
+.over .status {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.actions .link + .link {
+  margin-left: 0.75rem;
+}
+
+.remove {
+  color: var(--danger);
+}
+
+.edit {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.edit input {
+  width: 7rem;
+}
+
+th input {
+  width: 100%;
+  min-width: 6rem;
+}
+
+.primary.small {
+  padding: 0.35rem 0.8rem;
+}
+
+h2 {
+  margin: 1.5rem 0 0.5rem;
+  font-size: 1.1rem;
+}
+
+.unbudgeted {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.unbudgeted li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.25rem 0;
+}
