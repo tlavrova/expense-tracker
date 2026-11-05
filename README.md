@@ -96,11 +96,13 @@ API reads from `JWT_SECRET`; the API won't start without it. Make a random one o
 in `~/.zshrc` (outside the project, so it can never be committed), next to the Gemini key:
 
 ```bash
-python3 -c "import secrets; print(secrets.token_urlsafe(32))"   # prints a new random secret
-export JWT_SECRET=...                                           # paste it here
+echo "export JWT_SECRET=$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')" >> ~/.zshrc
+source ~/.zshrc
 ```
 
-Changing the secret logs everyone out. Online (stage 13) it goes into the hosting service's
+Changing the secret logs everyone out. Password guessing is slowed down: after 5 wrong passwords
+for one email from one address, or 30 login and sign-up attempts from one address, within 15
+minutes, the API answers "Too many attempts. Try again in N minutes." Online (stage 13) it goes into the hosting service's
 settings instead. The command-line app doesn't need it: it stays a local tool with its own
 expenses, separate from the website accounts.
 
@@ -128,10 +130,17 @@ and you're logged in; "Log out" is in the header. A login lasts 7 days.
 The API only accepts calls from `http://localhost:4200`, so keep the frontend on that port.
 Where the frontend looks for the API is set in `frontend/src/environments/environment.ts`.
 
-Frontend tests (Vitest; they use fake data, so the API doesn't need to run):
+## Tests
+
+Neither needs the servers running, a Gemini key or internet: the backend tests use a temporary
+database each, the frontend tests fake the API.
 
 ```bash
-cd frontend && npm test
+cd backend && source .venv/bin/activate
+pip install -r requirements-dev.txt      # once: pytest and httpx2 (only for testing)
+pytest                                   # backend: models, database, migrations, API, login, CLI
+
+cd frontend && npm test -- --watch=false # frontend (Vitest)
 ```
 
 ## API
@@ -187,6 +196,7 @@ expense-tracker/
 │   ├── storage.py       # expense queries for one owner (the CLI, or one account): list, add, delete, totals
 │   ├── users.py         # accounts: create, find by email or id
 │   ├── security.py      # password hashing, login tokens (JWT_SECRET), the logged-in user
+│   ├── rate_limit.py    # "at most N times in M minutes", for login and sign-up attempts
 │   ├── alembic.ini      # Alembic settings (database migrations)
 │   ├── migrations/      # migration scripts: 0001 expenses table, 0002 users + expenses.user_id
 │   ├── json_import.py   # one-time move of the old expenses.json into the database
@@ -198,7 +208,10 @@ expense-tracker/
 │   │   └── expenses.py  # /expenses, /summary, /suggest-category (login required)
 │   ├── expenses.db      # local SQLite data (git-ignored; created on first start)
 │   ├── expenses.log     # action log from @log_action (git-ignored)
-│   └── requirements.txt # google-genai, fastapi, uvicorn, sqlmodel, alembic, pwdlib, PyJWT, …
+│   ├── tests/           # pytest: one temporary database per test, Gemini never called
+│   ├── pytest.ini       # where the tests are
+│   ├── requirements.txt # google-genai, fastapi, uvicorn, sqlmodel, alembic, pwdlib, PyJWT, …
+│   └── requirements-dev.txt # + pytest and httpx2, for the tests
 ├── frontend/            # Angular 22 app
 │   └── src/
 │       ├── environments/environment.ts  # apiUrl: where the API runs
@@ -226,5 +239,5 @@ expense-tracker/
 
 ## Later
 
-Budget limits with warnings · charts in the Angular UI · unit tests (pytest, Angular tests) ·
+Budget limits with warnings · charts in the Angular UI · editing an expense ·
 more AI: natural-language input, monthly summary

@@ -103,6 +103,25 @@ describe('AuthPage: log in', () => {
     expect(page().querySelector<HTMLButtonElement>('button[type=submit]')!.disabled).toBe(false);
   });
 
+  it('says how long to wait after too many attempts (429)', async () => {
+    const login = vi.fn(() =>
+      throwError(
+        () =>
+          new HttpErrorResponse({
+            status: 429,
+            error: { detail: 'Too many attempts. Try again in 15 minutes.' },
+          }),
+      ),
+    );
+    const { page, type, submit } = await open('/login', { login });
+    type('email', 'ana@example.com');
+    type('password', 'correct horse');
+    await submit();
+    expect(page().querySelector('[role=alert]')?.textContent).toContain(
+      'Too many attempts. Try again in 15 minutes.',
+    );
+  });
+
   it('shows why the user was sent here', async () => {
     const { page } = await open('/login', {
       notice: signal('Your login has expired. Please log in again.'),
