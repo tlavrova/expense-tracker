@@ -1,5 +1,7 @@
 """Read and change expenses in the database: the queries the CLI and the API use.
 
+Totals (GROUP BY) are in reports.py.
+
 Each expense is one row with an id. ExpenseRow (database.py) is the table; models.py keeps plain
 dataclasses, so it doesn't depend on the database, and this module converts between the two.
 Nothing here reads input or prints, so the CLI and the API can both use it.
@@ -14,7 +16,7 @@ from __future__ import annotations
 from typing import Literal
 
 from sqlalchemy import Engine, extract
-from sqlmodel import Session, col, func, select
+from sqlmodel import Session, col, select
 
 import database
 from database import ExpenseRow, StorageError
@@ -22,14 +24,14 @@ from models import Expense, ExpenseTracker, RecurringExpense
 
 __all__ = [
     "LOCAL",
+    "Owner",
     "StorageError",
     "add",
     "delete",
     "get",
     "list_expenses",
     "load",
-    "totals_by_category",
-    "totals_by_month",
+    "owned_by",
     "update",
 ]
 
@@ -39,7 +41,7 @@ LOCAL: None = None
 Owner = int | None
 
 
-def _owned_by(statement, owner: Owner):
+def owned_by(statement, owner: Owner):
     """Only the rows of this owner (LOCAL means: the rows without an account)."""
     if owner is LOCAL:
         return statement.where(col(ExpenseRow.user_id).is_(None))
@@ -48,7 +50,7 @@ def _owned_by(statement, owner: Owner):
 
 def _owned_row(session: Session, expense_id: int, owner: Owner) -> ExpenseRow | None:
     """The row with this id, only if it belongs to this owner (another owner's id: None)."""
-    return session.exec(_owned_by(select(ExpenseRow), owner).where(ExpenseRow.id == expense_id)).first()
+    return session.exec(owned_by(select(ExpenseRow), owner).where(ExpenseRow.id == expense_id)).first()
 
 
 def row_from_expense(expense: Expense, owner: Owner) -> ExpenseRow:
@@ -89,7 +91,7 @@ def list_expenses(
 
     sort: "amount" largest first, "date" oldest first, None in the order they were added.
     """
-    statement = _owned_by(select(ExpenseRow), owner)
+    statement = owned_by(select(ExpenseRow), owner)
     if category:
         statement = statement.where(ExpenseRow.category == category.strip().lower())
     if year_month:
@@ -151,25 +153,3 @@ def delete(expense_id: int, *, owner: Owner, engine: Engine | None = None) -> bo
         session.delete(row)
         session.commit()
     return True
-
-
-def totals_by_category(*, owner: Owner, engine: Engine | None = None) -> dict[str, float]:
-    """Category -> total amount, A to Z, added up by the database (GROUP BY)."""
-    statement = _owned_by(
-        select(ExpenseRow.category, func.sum(ExpenseRow.amount)), owner
-    ).group_by(ExpenseRow.category).order_by(ExpenseRow.category)
-    with database.open_session("read the totals", engine) as session:
-        return {category: total for category, total in session.exec(statement)}
-
-
-def totals_by_month(*, owner: Owner, engine: Engine | None = None) -> dict[str, float]:
-    """"YYYY-MM" -> total amount, oldest month first, added up by the database (GROUP BY)."""
-    year = extract("year", ExpenseRow.date)
-    month = extract("month", ExpenseRow.date)
-    statement = (
-        _owned_by(select(year, month, func.sum(ExpenseRow.amount)), owner)
-        .group_by(year, month)
-        .order_by(year, month)
-    )
-    with database.open_session("read the totals", engine) as session:
-        return {f"{int(y):04d}-{int(m):02d}": total for y, m, total in session.exec(statement)}

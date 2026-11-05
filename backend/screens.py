@@ -11,6 +11,7 @@ from datetime import date
 from typing import Any, Callable, Iterable, TypeVar
 
 import ai_helper
+import reports
 import storage
 from decorators import log_action
 from models import CATEGORIES, Expense, ExpenseTracker, RecurringExpense
@@ -108,7 +109,7 @@ def show_all(tracker: ExpenseTracker) -> None:
 def show_summary(tracker: ExpenseTracker) -> None:
     """Print totals per category, the overall total and the unique categories."""
     print("Totals per category:")
-    for category, total in storage.totals_by_category(owner=storage.LOCAL).items():
+    for category, total in reports.totals_by_category(owner=storage.LOCAL).items():
         print(f"  {category}: {total:.2f}")
     print(f"Total spent: {tracker.total():.2f}")
     categories = sorted(tracker.categories())
@@ -142,7 +143,7 @@ def show_statistics(tracker: ExpenseTracker) -> None:
     for category, count in tracker.count_by_category().most_common():
         print(f"  {category}: {count}")
     print("Totals per month:")
-    for month, total in storage.totals_by_month(owner=storage.LOCAL).items():
+    for month, total in reports.totals_by_month(owner=storage.LOCAL).items():
         print(f"  {month}: {total:.2f}")
 
 
