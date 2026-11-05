@@ -229,7 +229,7 @@ exist. Errors always look like `{"detail": "a readable message"}` (`422` for inv
 - [x] **10. Angular: list and add** — switch `ExpenseService` to `HttpClient` against the API; add form with validation
 - [x] **11. Angular: summary, filter and AI** — totals per category, filter by category and month, sort; AI suggestion in the add form (accept or override, manual fallback)
 - [x] **12. Login** — sign-up and login (hashed passwords, token) in FastAPI; each expense belongs to a user; Angular login page, interceptor and route guard
-- [ ] **13. Deploy** — Angular on GitHub Pages (GitHub Actions), FastAPI on a free host, free hosted Postgres, Gemini key as a host secret; the site works from any device
+- [x] **13. Deploy** — Angular on GitHub Pages (GitHub Actions), FastAPI on a free host, free hosted Postgres, Gemini key as a host secret; the site works from any device
 
 ## Structure
 
