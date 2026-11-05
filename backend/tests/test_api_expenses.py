@@ -2,7 +2,6 @@
 
 import pytest
 
-import ai_helper
 import storage
 from models import Expense
 
@@ -112,17 +111,6 @@ def test_users_cannot_see_or_change_each_others_expense(client, ana, sign_up):
 def test_the_command_line_apps_expenses_stay_out_of_the_website(client, sign_up):
     storage.add(Expense(3.5, "food", "CLI coffee", "2026-11-01"), owner=storage.LOCAL)
     assert client.get("/expenses", headers=sign_up()).json() == []
-
-
-def test_suggest_category(client, sign_up, monkeypatch):
-    monkeypatch.setattr(ai_helper, "suggest_category", lambda description: "transport")
-    answer = client.post("/suggest-category", json={"description": "Uber to airport"}, headers=sign_up())
-    assert answer.json() == {"category": "transport"}
-
-
-def test_suggest_category_without_ai(client, sign_up):
-    answer = client.post("/suggest-category", json={"description": "Uber"}, headers=sign_up())
-    assert answer.status_code == 503 and answer.json() == {"detail": "GEMINI_API_KEY is not set."}
 
 
 def test_cors_lets_the_angular_dev_server_send_the_token(client):

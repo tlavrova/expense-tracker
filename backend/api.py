@@ -28,7 +28,7 @@ from fastapi.responses import JSONResponse
 import json_import
 import security
 import storage
-from routers import auth, expenses
+from routers import ai, auth, expenses
 
 # Where the Angular dev server runs (npm start). Online, CORS_ORIGINS names the deployed site.
 DEV_ORIGIN = "http://localhost:4200"
@@ -70,3 +70,4 @@ def validation_error(request: Request, error: RequestValidationError) -> JSONRes
 
 app.include_router(auth.router)
 app.include_router(expenses.router)
+app.include_router(ai.router)
