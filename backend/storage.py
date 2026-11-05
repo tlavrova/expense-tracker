@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from sqlalchemy import Engine, extract
+from sqlalchemy import Engine, and_, extract
 from sqlmodel import Session, col, select
 
 import database
@@ -29,6 +29,7 @@ __all__ = [
     "add",
     "delete",
     "get",
+    "in_month",
     "list_expenses",
     "load",
     "owned_by",
@@ -46,6 +47,11 @@ def owned_by(statement, owner: Owner):
     if owner is LOCAL:
         return statement.where(col(ExpenseRow.user_id).is_(None))
     return statement.where(ExpenseRow.user_id == owner)
+
+
+def in_month(year: int, month: int):
+    """The WHERE condition "the expense's date is in this month" (for .where())."""
+    return and_(extract("year", ExpenseRow.date) == year, extract("month", ExpenseRow.date) == month)
 
 
 def _owned_row(session: Session, expense_id: int, owner: Owner) -> ExpenseRow | None:
@@ -95,10 +101,7 @@ def list_expenses(
     if category:
         statement = statement.where(ExpenseRow.category == category.strip().lower())
     if year_month:
-        year, month = year_month
-        statement = statement.where(
-            extract("year", ExpenseRow.date) == year, extract("month", ExpenseRow.date) == month
-        )
+        statement = statement.where(in_month(*year_month))
     if sort == "amount":
         statement = statement.order_by(col(ExpenseRow.amount).desc(), col(ExpenseRow.id))
     elif sort == "date":
