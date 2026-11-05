@@ -1,3 +1,4 @@
+import { DecimalPipe } from '@angular/common';
 import { Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import {
   AbstractControl,
@@ -12,7 +13,9 @@ import { Observable } from 'rxjs';
 import { apiErrorMessage } from '../../core/api-error';
 import { today } from '../../core/dates';
 import { CATEGORIES, Expense, FREQUENCIES, Frequency, NewExpense } from '../expense.model';
+import { BudgetService } from '../../budgets/budget.service';
 import { ExpenseService } from '../expense.service';
+import { BudgetHint } from './budget-hint';
 import { CategorySuggestion } from './category-suggestion';
 
 /** Required, and more than spaces. */
@@ -33,13 +36,14 @@ function positive(control: AbstractControl<number | null>): ValidationErrors | n
  * suggestion works the same in both, so it only asks when the category is empty.
  */
 @Component({
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [DecimalPipe, ReactiveFormsModule, RouterLink],
   selector: 'app-expense-form',
   styleUrl: './expense-form.css',
   templateUrl: './expense-form.html',
 })
 export class ExpenseForm implements OnInit {
   private readonly expenseService = inject(ExpenseService);
+  private readonly budgetService = inject(BudgetService);
   private readonly router = inject(Router);
 
   /** From the address on the edit page (/expenses/:id/edit); not set on the add page. */
@@ -65,6 +69,11 @@ export class ExpenseForm implements OnInit {
     this.form.controls.description,
     this.form.controls.category,
     (description) => this.expenseService.suggestCategory(description),
+  );
+
+  /** How much of the category's budget this month uses with this expense (budget-hint.ts). */
+  protected readonly budgetHint = new BudgetHint(this.form.controls, (month) =>
+    this.budgetService.month(month),
   );
 
   protected readonly saving = signal(false);
@@ -102,6 +111,7 @@ export class ExpenseForm implements OnInit {
       frequency: expense.frequency ?? '',
     });
     this.ai.alreadyHas(expense.description); // leaving the description won't ask the AI
+    this.budgetHint.editing(expense); // its amount is already in the month's spending
   }
 
   /** Show a field's error once the user has left it, or tried to save. */
