@@ -3,6 +3,8 @@
  * files must have the same fields.
  */
 export const environment = {
+  /** true: error messages are for visitors (the API on the free plan may be waking up). */
+  production: true,
   /** The FastAPI backend on Render (free plan: sleeps after 15 idle minutes, the first visit then takes about a minute). */
   apiUrl: 'https://expense-tracker-xbnh.onrender.com',
 };
