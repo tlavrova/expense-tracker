@@ -145,3 +145,28 @@ button.primary:disabled {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+
+/* A message under a form field that needs fixing */
+.field-error {
+  display: block;
+  color: var(--danger);
+}
+
+/* A thin bar showing a share (summary) or how much of a budget is used; each page sets the width
+   and the filled part's width (style.width.%) */
+.bar {
+  display: inline-block;
+  height: 0.5rem;
+  margin-right: 0.5rem;
+  vertical-align: middle;
+  background: var(--hover);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.bar > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 999px;
+}

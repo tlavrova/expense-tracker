@@ -37,10 +37,6 @@
   color: var(--muted);
 }
 
-.field-error {
-  color: var(--danger);
-}
-
 .label-row {
   display: flex;
   justify-content: space-between;
