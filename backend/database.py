@@ -2,7 +2,7 @@
 
 Which database comes from the DATABASE_URL environment variable:
   not set                          SQLite file expenses.db next to this file (on your Mac)
-  postgresql://user:pass@host/db   Postgres (online, stage 13; needs a Postgres driver then)
+  postgresql://user:pass@host/db   Postgres (online, stage 13), through the psycopg driver
 
 SQL_ECHO=1 prints every SQL statement SQLModel sends, to see what the query builder produces.
 
@@ -71,9 +71,10 @@ def database_url() -> str:
     url = os.environ.get("DATABASE_URL", "").strip()
     if not url:
         return f"sqlite:///{DEFAULT_DB_PATH}"
-    # Some hosts hand out "postgres://", which SQLAlchemy doesn't accept.
-    if url.startswith("postgres://"):
-        url = "postgresql://" + url.removeprefix("postgres://")
+    # Hosts hand out "postgres://" or "postgresql://"; SQLAlchemy needs the driver named (psycopg 3).
+    for prefix in ("postgres://", "postgresql://"):
+        if url.startswith(prefix):
+            return "postgresql+psycopg://" + url.removeprefix(prefix)
     return url
 
 

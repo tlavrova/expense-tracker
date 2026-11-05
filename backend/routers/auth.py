@@ -8,8 +8,9 @@ Guessing passwords is slowed down (rate_limit.py), answering 429 "Too many attem
 - at most 5 failed logins per email and IP address within 15 minutes (a success starts over);
 - at most 30 login and sign-up attempts per IP address within 15 minutes, against scripts
   that try many emails.
-Behind a hosting service's proxy, the IP address only works with uvicorn --proxy-headers
-(stage 13); otherwise every visitor would look like the proxy.
+Behind a hosting service's proxy, uvicorn must be told which addresses are that proxy
+(FORWARDED_ALLOW_IPS, see the README); otherwise every visitor looks like the proxy. Never "*":
+then uvicorn believes the first X-Forwarded-For entry, which the visitor can make up.
 """
 
 from __future__ import annotations
