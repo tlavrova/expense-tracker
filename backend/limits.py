@@ -27,18 +27,19 @@ def client_ip(request: Request) -> str:
     return request.client.host if request.client else "unknown"
 
 
-def too_many(error: TooManyAttempts) -> HTTPException:
+def too_many(error: TooManyAttempts, what: str = "attempts") -> HTTPException:
+    """429 "Too many <what>. Try again in N minutes." with a Retry-After header (seconds)."""
     minutes = math.ceil(error.retry_after / 60)
     return HTTPException(
         status.HTTP_429_TOO_MANY_REQUESTS,
-        f"Too many attempts. Try again in {minutes} minute{'s' if minutes != 1 else ''}.",
+        f"Too many {what}. Try again in {minutes} minute{'s' if minutes != 1 else ''}.",
         headers={"Retry-After": str(error.retry_after)},
     )
 
 
-def check(limit: RateLimit, key: Hashable) -> None:
-    """429 "Too many attempts" if this key has used up the limit."""
+def check(limit: RateLimit, key: Hashable, what: str = "attempts") -> None:
+    """429 "Too many <what>" if this key has used up the limit."""
     try:
         limit.check(key)
     except TooManyAttempts as error:
-        raise too_many(error) from None
+        raise too_many(error, what) from None
