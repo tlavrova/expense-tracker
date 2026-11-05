@@ -14,7 +14,8 @@ from sqlalchemy import Engine
 from sqlmodel import select
 
 import database
-from database import ExpenseRow, StorageError
+from database import StorageError
+from tables import ExpenseRow
 from models import Expense, RecurringExpense
 from storage import LOCAL, row_from_expense
 

@@ -1,4 +1,4 @@
-"""How Alembic connects: the app's own database and table classes (database.py).
+"""How Alembic connects: the app's own database (database.py) and table classes (tables.py).
 
 No logging setup here on purpose: the CLI and the API configure logging themselves.
 """
@@ -6,7 +6,8 @@ No logging setup here on purpose: the CLI and the API configure logging themselv
 from alembic import context
 from sqlmodel import SQLModel, create_engine
 
-import database  # noqa: F401  (registers the table classes on SQLModel.metadata)
+import database
+import tables  # noqa: F401  (registers the table classes on SQLModel.metadata)
 
 config = context.config
 target_metadata = SQLModel.metadata

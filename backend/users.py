@@ -10,7 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import select
 
 import database
-from database import UserRow
+from tables import UserRow
 
 
 class EmailTakenError(Exception):
