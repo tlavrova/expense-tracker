@@ -140,6 +140,14 @@ describe('ExpenseForm', () => {
   });
 });
 
+/** render() with an add() that saves, for tests that go all the way to saving. */
+async function renderWithAdd(suggestCategory: ExpenseService['suggestCategory']) {
+  const add = vi.fn(() =>
+    of({ id: 1, amount: 32.5, category: 'transport', description: 'Uber', date: today() }),
+  );
+  return { ...(await render(add, suggestCategory)), add };
+}
+
 describe('ExpenseForm: editing', () => {
   const RENT = {
     id: 7,
@@ -288,6 +296,27 @@ describe('ExpenseForm: AI category suggestion', () => {
     expect(value('category')).toBe('');
     await submit();
     expect(page.textContent).toContain('Please choose or type a category.');
+  });
+
+  it('says when the AI limit is reached (429) and lets the user pick by hand', async () => {
+    const limited = () =>
+      throwError(
+        () =>
+          new HttpErrorResponse({
+            status: 429,
+            error: { detail: 'Too many AI suggestions. Try again in 60 minutes.' },
+          }),
+      );
+    const { type, leave, hint, submit, add } = await renderWithAdd(limited);
+    type('description', 'Uber');
+    await leave('description');
+    expect(hint()).toBe(
+      'No AI suggestion: Too many AI suggestions. Try again in 60 minutes. Please pick a category.',
+    );
+    type('amount', '32.5');
+    type('category', 'transport');
+    await submit();
+    expect(add).toHaveBeenCalledWith(expect.objectContaining({ category: 'transport' }));
   });
 
   it('"Suggest again" asks once more', async () => {

@@ -66,6 +66,8 @@ into the hosting service's environment settings instead; the code reads it the s
 Without a key, without internet, or when the free-tier limit is reached, the app falls back to
 picking the category by hand. Free-tier answers usually take 1–10 seconds; Ctrl+C skips the
 suggestion. The free tier also has a per-minute limit, so many suggestions in a row can hit it.
+On the website, each account may ask for at most 20 suggestions an hour, so one account can't use
+up the shared free tier for everyone; above that, the category is picked by hand.
 
 On the free tier, Google may use what is sent (the expense descriptions) to improve its
 products, so don't put anything private in descriptions.
@@ -212,7 +214,7 @@ uses the same database and rules as the command-line app.
 | `PUT /expenses/{id}` | change one: the same body and rules as adding (leave out frequency for a one-off) | the saved expense, or `404` |
 | `DELETE /expenses/{id}` | delete one | `204`, or `404` |
 | `GET /summary` | totals per category and overall | `{"totalsByCategory": {...}, "total": ...}` |
-| `POST /suggest-category` | `{"description": "..."}` → Gemini's category | `{"category": "..."}`, or `503` when AI isn't available |
+| `POST /suggest-category` | `{"description": "..."}` → Gemini's category (at most 20 per account per hour) | `{"category": "..."}`, `503` when AI isn't available, or `429` above the limit |
 
 Everything except sign-up and login needs the header `Authorization: Bearer <access_token>`;
 without a valid one the answer is `401`. Another account's expense answers `404`, as if it didn't

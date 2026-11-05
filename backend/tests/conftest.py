@@ -14,7 +14,7 @@ from fastapi.testclient import TestClient
 
 import database
 import json_import
-from routers import auth
+from routers import ai, auth
 
 TEST_SECRET = "test-secret-for-pytest-only-0123456789"
 
@@ -30,6 +30,7 @@ def isolated(tmp_path, monkeypatch) -> Iterator[None]:
     database.get_engine.cache_clear()
     auth.failed_logins.reset()
     auth.attempts_per_ip.reset()
+    ai.suggestions_per_user.reset()
     yield
     database.get_engine.cache_clear()
 
