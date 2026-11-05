@@ -3,19 +3,10 @@ import { Component, computed, effect, inject, input, signal, untracked } from '@
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { apiErrorMessage } from '../../core/api-error';
+import { isMonth, shiftMonth, thisMonth } from '../../core/dates';
 import { CATEGORIES } from '../../expenses/expense.model';
-import { today } from '../../expenses/expense-form/expense-form';
 import { MonthReport } from '../budget.model';
 import { BudgetService } from '../budget.service';
-
-const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
-
-/** "2026-11" moved by some months: shiftMonth("2026-01", -1) is "2025-12". */
-export function shiftMonth(month: string, by: number): string {
-  const [year, number] = month.split('-').map(Number);
-  const moved = new Date(year, number - 1 + by, 1);
-  return `${moved.getFullYear()}-${String(moved.getMonth() + 1).padStart(2, '0')}`;
-}
 
 /** A budgeted category in the shown month, with what's left (negative: over budget). */
 interface BudgetRow {
@@ -47,10 +38,10 @@ export class BudgetsPage {
 
   /** From the address (?month=2026-11); anything else shows the current month. */
   readonly month = input<string>();
-  protected readonly thisMonth = today().slice(0, 7);
+  protected readonly thisMonth = thisMonth();
   protected readonly shown = computed(() => {
     const month = this.month();
-    return month && MONTH.test(month) ? month : this.thisMonth;
+    return isMonth(month) ? month : this.thisMonth;
   });
   /** The first of the shown month, for the heading (a local date, so no time-zone shift). */
   protected readonly shownDate = computed(() => {

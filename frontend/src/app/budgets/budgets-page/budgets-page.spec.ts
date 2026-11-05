@@ -3,10 +3,10 @@ import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { Observable, of, throwError } from 'rxjs';
-import { today } from '../../expenses/expense-form/expense-form';
+import { shiftMonth, thisMonth } from '../../core/dates';
 import { MonthReport } from '../budget.model';
 import { BudgetService } from '../budget.service';
-import { BudgetsPage, shiftMonth } from './budgets-page';
+import { BudgetsPage } from './budgets-page';
 
 const NOVEMBER: MonthReport = {
   month: '2026-11',
@@ -88,12 +88,12 @@ describe('BudgetsPage', () => {
 
   it('starts on the current month and moves with ‹ and ›', async () => {
     const { harness, page, fake } = await open('/budgets');
-    expect(fake.month).toHaveBeenCalledWith(today().slice(0, 7));
+    expect(fake.month).toHaveBeenCalledWith(thisMonth());
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate');
     page().querySelector<HTMLButtonElement>('button[aria-label="Previous month"]')!.click();
     await harness.fixture.whenStable();
     expect(navigate).toHaveBeenCalledWith([], {
-      queryParams: { month: shiftMonth(today().slice(0, 7), -1) },
+      queryParams: { month: shiftMonth(thisMonth(), -1) },
     });
   });
 
@@ -141,12 +141,5 @@ describe('BudgetsPage', () => {
       month: () => throwError(() => new HttpErrorResponse({ status: 0 })),
     });
     expect(page().querySelector('[role=alert]')?.textContent).toContain("Can't reach the API");
-  });
-});
-
-describe('shiftMonth()', () => {
-  it('moves across years', () => {
-    expect(shiftMonth('2026-01', -1)).toBe('2025-12');
-    expect(shiftMonth('2026-12', 1)).toBe('2027-01');
   });
 });

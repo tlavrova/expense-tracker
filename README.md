@@ -294,6 +294,7 @@ expense-tracker/
 │           │   └── budgets-page/     # one month: spent vs budget per category, set/change/remove in place
 │           ├── core/
 │           │   ├── api-error.ts        # turns a failed API call into a sentence for the page
+│           │   ├── dates.ts            # today(), thisMonth(), isMonth(), shiftMonth(): YYYY-MM-DD and YYYY-MM in local time
 │           │   └── auth.interceptor.ts # adds the token to API calls only; a 401 logs out
 │           └── expenses/
 │               ├── expense.model.ts    # Expense, NewExpense, Summary, filters; CATEGORIES, FREQUENCIES
