@@ -252,7 +252,8 @@ expense-tracker/
 │   ├── decorators.py    # @log_action
 │   ├── models.py        # Expense, RecurringExpense, ExpenseTracker
 │   ├── database.py      # database connection (DATABASE_URL, SQL_ECHO), table classes, migrations
-│   ├── storage.py       # expense queries for one owner (the CLI, or one account): list, add, delete, totals
+│   ├── storage.py       # expense queries for one owner (the CLI, or one account): list, get, add, change, delete
+│   ├── reports.py       # totals for one owner, added up by the database: per category, per month
 │   ├── users.py         # accounts: create, find by email or id
 │   ├── security.py      # password hashing, login tokens (JWT_SECRET), the logged-in user
 │   ├── rate_limit.py    # "at most N times in M minutes", for login and sign-up attempts
@@ -265,7 +266,8 @@ expense-tracker/
 │   ├── schemas.py       # the API's JSON shapes (Pydantic)
 │   ├── routers/
 │   │   ├── auth.py      # /auth/signup, /auth/login, /auth/me
-│   │   ├── expenses.py  # /expenses, /summary (login required)
+│   │   ├── expenses.py  # /expenses (login required)
+│   │   ├── reports.py   # /summary (login required)
 │   │   └── ai.py        # /suggest-category (login required)
 │   ├── expenses.db      # local SQLite data (git-ignored; created on first start)
 │   ├── expenses.log     # action log from @log_action (git-ignored)

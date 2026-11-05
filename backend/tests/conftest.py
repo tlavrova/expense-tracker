@@ -14,6 +14,7 @@ from fastapi.testclient import TestClient
 
 import database
 import json_import
+import users
 from routers import ai, auth
 
 TEST_SECRET = "test-secret-for-pytest-only-0123456789"
@@ -54,3 +55,12 @@ def sign_up(client: TestClient) -> Callable[..., dict[str, str]]:
         return {"Authorization": f"Bearer {answer.json()['access_token']}"}
 
     return make
+
+
+@pytest.fixture
+def two_users() -> tuple[int, int]:
+    """Two accounts straight in the database (no API); their ids."""
+    ana = users.create("ana@example.com", "hash")
+    bob = users.create("bob@example.com", "hash")
+    assert ana.id is not None and bob.id is not None
+    return ana.id, bob.id

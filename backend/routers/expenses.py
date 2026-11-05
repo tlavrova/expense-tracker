@@ -1,4 +1,4 @@
-"""The expense endpoints: list, get one, add, change, delete, and the summary.
+"""The expense endpoints: list, get one, add, change and delete.
 
 Every endpoint needs a logged-in user (security.CurrentUser) and only sees that user's own
 expenses: another account's expense id answers 404, as if it didn't exist.
@@ -13,7 +13,7 @@ from fastapi import APIRouter, HTTPException, Query, Response, status
 
 import storage
 from models import Expense, RecurringExpense
-from schemas import ExpenseOut, NewExpense, Summary
+from schemas import ExpenseOut, NewExpense
 from security import CurrentUser
 
 router = APIRouter(tags=["expenses"])
@@ -103,10 +103,3 @@ def delete_expense(expense_id: int, user: CurrentUser) -> Response:
     if not storage.delete(expense_id, owner=user.id):
         raise not_found(expense_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
-@router.get("/summary", response_model=Summary, response_model_by_alias=True)
-def summary(user: CurrentUser) -> Summary:
-    """Your totals per category (added up by the database) and the overall total."""
-    totals = storage.totals_by_category(owner=user.id)
-    return Summary(totals_by_category=totals, total=sum(totals.values()))

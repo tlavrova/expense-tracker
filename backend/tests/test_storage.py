@@ -3,15 +3,7 @@
 import pytest
 
 import storage
-import users
 from models import Expense, RecurringExpense
-
-
-@pytest.fixture
-def two_users():
-    ana = users.create("ana@example.com", "hash")
-    bob = users.create("bob@example.com", "hash")
-    return ana.id, bob.id
 
 
 def add_some(owner):
@@ -28,7 +20,6 @@ def test_owners_never_see_each_others_expenses(two_users):
     assert [e.description for e in storage.list_expenses(owner=ana)] == ["Uber", "Rent", "Taxi"]
     assert [e.description for e in storage.list_expenses(owner=bob)] == ["Bob's lunch"]
     assert [e.description for e in storage.load(owner=storage.LOCAL).expenses] == ["CLI coffee"]
-    assert storage.totals_by_category(owner=bob) == {"food": 7.0}
 
 
 def test_delete_only_works_for_the_owner(two_users):
@@ -55,13 +46,6 @@ def test_recurring_expenses_come_back_as_recurring(two_users):
     add_some(ana)
     rent = storage.list_expenses(owner=ana, category="housing")[0]
     assert isinstance(rent, RecurringExpense) and rent.frequency == "monthly"
-
-
-def test_totals_per_category_and_month(two_users):
-    ana, _ = two_users
-    add_some(ana)
-    assert storage.totals_by_category(owner=ana) == {"housing": 900.0, "transport": 50.5}
-    assert storage.totals_by_month(owner=ana) == {"2026-10": 900.0, "2026-11": 50.5}
 
 
 def test_owner_is_required():
