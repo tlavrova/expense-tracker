@@ -309,7 +309,7 @@ expense-tracker/
 │               ├── expense.service.ts  # the only data source: HttpClient calls to the API
 │               ├── expense-list/       # list with filters (kept in the address), total, edit and delete
 │               ├── expense-filter-bar/ # category, month and sort fields above the list
-│               ├── expense-form/       # add and edit form with validation and the AI category suggestion
+│               ├── expense-form/       # add and edit form with validation; category-suggestion.ts asks the AI
 │               └── summary/            # totals per category with their share
 └── README.md
 ```
