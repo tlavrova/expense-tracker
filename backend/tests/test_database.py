@@ -96,3 +96,15 @@ def test_a_postgres_url_uses_the_psycopg_driver(monkeypatch, given):
 def test_a_url_that_names_its_driver_is_kept(monkeypatch):
     monkeypatch.setenv("DATABASE_URL", "postgresql+psycopg://u:p@host/db")
     assert database.database_url() == "postgresql+psycopg://u:p@host/db"
+
+
+def test_the_api_migrates_when_it_starts(tmp_path, monkeypatch):
+    """Not on the first request: a broken migration must stop the start (and with it the deploy)."""
+    import api
+    from fastapi.testclient import TestClient
+
+    url = f"sqlite:///{tmp_path / 'start.db'}"
+    monkeypatch.setenv("DATABASE_URL", url)
+    database.get_engine.cache_clear()
+    with TestClient(api.app):  # starts the app (lifespan), no request sent
+        assert "budgets" in inspect(create_engine(url)).get_table_names()
