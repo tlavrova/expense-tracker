@@ -43,6 +43,29 @@ describe('ExpenseService (HTTP)', () => {
     expect(await answer).toEqual([]);
   });
 
+  it('gets one expense with GET /expenses/{id} and changes it with PUT', async () => {
+    const rent: Expense = {
+      id: 7,
+      amount: 900,
+      category: 'housing',
+      description: 'Rent',
+      date: '2026-10-01',
+    };
+    const got = firstValueFrom(service.get(7));
+    const get = http.expectOne(`${api}/expenses/7`);
+    expect(get.request.method).toBe('GET');
+    get.flush(rent);
+    expect(await got).toEqual(rent);
+
+    const { id, ...values } = { ...rent, amount: 950 };
+    const saved = firstValueFrom(service.update(id!, values));
+    const put = http.expectOne(`${api}/expenses/7`);
+    expect(put.request.method).toBe('PUT');
+    expect(put.request.body).toEqual(values);
+    put.flush({ ...values, id });
+    expect(await saved).toEqual({ ...values, id: 7 });
+  });
+
   it('asks POST /suggest-category and returns just the category', async () => {
     const answer = firstValueFrom(service.suggestCategory('Uber to airport'));
     const request = http.expectOne(`${api}/suggest-category`);

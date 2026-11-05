@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
@@ -8,10 +8,10 @@ import {
   ValidationErrors,
   Validators,
 } from '@angular/forms';
-import { Router } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Router, RouterLink } from '@angular/router';
+import { Observable, Subscription } from 'rxjs';
 import { apiErrorMessage } from '../../core/api-error';
-import { CATEGORIES, FREQUENCIES, Frequency, NewExpense } from '../expense.model';
+import { CATEGORIES, Expense, FREQUENCIES, Frequency, NewExpense } from '../expense.model';
 import { ExpenseService } from '../expense.service';
 
 /** Required, and more than spaces. */
@@ -32,15 +32,28 @@ export function today(now = new Date()): string {
   return `${now.getFullYear()}-${month}-${day}`;
 }
 
+/**
+ * The add page (/expenses/new) and the edit page (/expenses/:id/edit): the same form, two modes.
+ *
+ * Editing loads the expense into the form first and saves with PUT instead of POST. The AI
+ * suggestion works the same in both, so it only asks when the category is empty.
+ */
 @Component({
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   selector: 'app-expense-form',
   styleUrl: './expense-form.css',
   templateUrl: './expense-form.html',
 })
-export class ExpenseForm {
+export class ExpenseForm implements OnInit {
   private readonly expenseService = inject(ExpenseService);
   private readonly router = inject(Router);
+
+  /** From the address on the edit page (/expenses/:id/edit); not set on the add page. */
+  readonly id = input<string>();
+  protected readonly editing = computed(() => this.id() !== undefined);
+  /** Edit page: true while the expense is loading; the error if it can't be loaded. */
+  protected readonly loading = signal(false);
+  protected readonly loadError = signal('');
 
   protected readonly categories = CATEGORIES;
   protected readonly frequencies = FREQUENCIES;
@@ -72,6 +85,39 @@ export class ExpenseForm {
         this.cancelSuggestion();
       }
     });
+  }
+
+  ngOnInit(): void {
+    // Inputs from the route are set by now, not yet in the constructor.
+    const id = this.id();
+    if (id !== undefined) {
+      this.load(Number(id));
+    }
+  }
+
+  private load(id: number): void {
+    this.loading.set(true);
+    this.expenseService.get(id).subscribe({
+      next: (expense) => {
+        this.fill(expense);
+        this.loading.set(false);
+      },
+      error: (error: unknown) => {
+        this.loadError.set(apiErrorMessage(error)); // e.g. 404 "No expense with id 7."
+        this.loading.set(false);
+      },
+    });
+  }
+
+  private fill(expense: Expense): void {
+    this.form.setValue({
+      description: expense.description,
+      amount: expense.amount,
+      category: expense.category,
+      date: expense.date,
+      frequency: expense.frequency ?? '',
+    });
+    this.askedFor = expense.description; // it has a category: leaving the description won't ask
   }
 
   /** Leaving the description with no category yet asks the AI, once per description. */
@@ -130,9 +176,14 @@ export class ExpenseForm {
       date: value.date,
       ...(value.frequency ? { frequency: value.frequency } : {}),
     };
+    const id = this.id();
+    const request: Observable<Expense> =
+      id === undefined
+        ? this.expenseService.add(expense)
+        : this.expenseService.update(Number(id), expense);
     this.saving.set(true);
     this.serverError.set('');
-    this.expenseService.add(expense).subscribe({
+    request.subscribe({
       next: () => this.router.navigate(['/expenses']),
       error: (error: unknown) => {
         this.serverError.set(apiErrorMessage(error));

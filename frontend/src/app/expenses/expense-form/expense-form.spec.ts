@@ -8,12 +8,18 @@ import { ExpenseForm, today } from './expense-form';
 async function render(
   add: ExpenseService['add'],
   suggestCategory: ExpenseService['suggestCategory'] = vi.fn(),
+  /** The edit page: the id from the address, and the fake get/update. */
+  edit?: { id: string } & Partial<Pick<ExpenseService, 'get' | 'update'>>,
 ) {
+  const service = { add, suggestCategory, get: edit?.get, update: edit?.update };
   await TestBed.configureTestingModule({
     imports: [ExpenseForm],
-    providers: [provideRouter([]), { provide: ExpenseService, useValue: { add, suggestCategory } }],
+    providers: [provideRouter([]), { provide: ExpenseService, useValue: service }],
   }).compileComponents();
   const fixture = TestBed.createComponent(ExpenseForm);
+  if (edit) {
+    fixture.componentRef.setInput('id', edit.id); // what the router does for /expenses/:id/edit
+  }
   await fixture.whenStable();
   const page = fixture.nativeElement as HTMLElement;
   const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
@@ -131,6 +137,77 @@ describe('ExpenseForm', () => {
     );
     expect(navigate).not.toHaveBeenCalled();
     expect(page.querySelector<HTMLButtonElement>('button[type=submit]')!.disabled).toBe(false);
+  });
+});
+
+describe('ExpenseForm: editing', () => {
+  const RENT = {
+    id: 7,
+    amount: 900,
+    category: 'housing',
+    description: 'Rent',
+    date: '2026-10-01',
+    frequency: 'monthly' as const,
+  };
+
+  it('loads the expense into the form', async () => {
+    const get = vi.fn(() => of(RENT));
+    const { page, value } = await render(vi.fn(), vi.fn(), { id: '7', get });
+    expect(get).toHaveBeenCalledWith(7);
+    expect(page.querySelector('h1')?.textContent).toBe('Edit expense');
+    expect(value('description')).toBe('Rent');
+    expect(value('amount')).toBe('900');
+    expect(value('category')).toBe('housing');
+    expect(value('date')).toBe('2026-10-01');
+    expect(value('frequency')).toBe('monthly');
+    expect(page.querySelector('button[type=submit]')?.textContent?.trim()).toBe('Save changes');
+    expect(page.querySelector('a[href="/expenses"]')?.textContent).toBe('Cancel');
+  });
+
+  it('saves the changes with update, not add, and goes back to the list', async () => {
+    const add = vi.fn();
+    const update = vi.fn(() => of({ ...RENT, amount: 950 }));
+    const { type, submit, navigate } = await render(add, vi.fn(), {
+      id: '7',
+      get: () => of(RENT),
+      update,
+    });
+    type('amount', '950');
+    type('frequency', '');
+    await submit();
+    expect(add).not.toHaveBeenCalled();
+    expect(update).toHaveBeenCalledWith(7, {
+      amount: 950,
+      category: 'housing',
+      description: 'Rent',
+      date: '2026-10-01',
+    }); // no frequency: it becomes a one-off
+    expect(navigate).toHaveBeenCalledWith(['/expenses']);
+  });
+
+  it("doesn't ask the AI when leaving the description: the category is already there", async () => {
+    const suggestCategory = vi.fn();
+    const { type, leave, hint } = await render(vi.fn(), suggestCategory, {
+      id: '7',
+      get: () => of(RENT),
+    });
+    await leave('description');
+    type('description', 'Rent for November');
+    await leave('description');
+    expect(suggestCategory).not.toHaveBeenCalled();
+    expect(hint()).toContain('Pick one or type your own');
+  });
+
+  it("shows the API's message when the expense can't be loaded", async () => {
+    const get = vi.fn(() =>
+      throwError(
+        () => new HttpErrorResponse({ status: 404, error: { detail: 'No expense with id 7.' } }),
+      ),
+    );
+    const { page } = await render(vi.fn(), vi.fn(), { id: '7', get });
+    expect(page.querySelector('[role=alert]')?.textContent).toContain('No expense with id 7.');
+    expect(page.querySelector('form')).toBeNull();
+    expect(page.querySelector('a[href="/expenses"]')?.textContent).toBe('Back to the list');
   });
 });
 

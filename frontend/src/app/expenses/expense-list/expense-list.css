@@ -17,6 +17,11 @@
   text-align: right;
 }
 
+.edit {
+  margin-right: 0.5rem;
+  font-size: 0.85rem;
+}
+
 .delete {
   padding: 0.2rem 0.6rem;
   font: inherit;

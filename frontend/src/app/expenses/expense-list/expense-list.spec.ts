@@ -63,6 +63,16 @@ describe('ExpenseList', () => {
     expect(page.textContent).not.toContain('Loading…');
   });
 
+  it('links each row to its edit page', async () => {
+    const { page } = await open('/expenses', { list: () => of(EXPENSES) });
+    const links = [...page.querySelectorAll<HTMLAnchorElement>('a.edit')];
+    expect(links.map((link) => link.getAttribute('href'))).toEqual([
+      '/expenses/1/edit',
+      '/expenses/2/edit',
+    ]);
+    expect(links[0].getAttribute('aria-label')).toBe('Edit Rent');
+  });
+
   it('deletes a row after confirming', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     const remove = vi.fn(() => of(undefined));

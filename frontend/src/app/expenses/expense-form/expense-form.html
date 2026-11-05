@@ -1,108 +1,117 @@
-<h1>Add expense</h1>
+<h1>{{ editing() ? 'Edit expense' : 'Add expense' }}</h1>
 
-<form class="form" [formGroup]="form" (ngSubmit)="save()" novalidate>
-  @if (serverError()) {
-    <p class="error" role="alert">{{ serverError() }}</p>
-  }
-
-  <label class="field">
-    <span>Description</span>
-    <input
-      formControlName="description"
-      placeholder="Uber to airport"
-      autocomplete="off"
-      (blur)="descriptionDone()"
-    />
-    @if (showError('description')) {
-      <small class="field-error">Please describe the expense.</small>
+@if (loading()) {
+  <p class="muted">Loading…</p>
+} @else if (loadError()) {
+  <p class="error" role="alert">{{ loadError() }} <a routerLink="/expenses">Back to the list</a></p>
+} @else {
+  <form class="form" [formGroup]="form" (ngSubmit)="save()" novalidate>
+    @if (serverError()) {
+      <p class="error" role="alert">{{ serverError() }}</p>
     }
-  </label>
 
-  <label class="field">
-    <span>Amount</span>
-    <input
-      formControlName="amount"
-      type="number"
-      inputmode="decimal"
-      step="0.01"
-      min="0.01"
-      placeholder="32.50"
-    />
-    @if (showError('amount')) {
-      <small class="field-error">
-        {{
-          form.controls.amount.hasError('positive')
-            ? 'The amount must be greater than zero.'
-            : 'Please enter an amount, for example 12.50.'
-        }}
+    <label class="field">
+      <span>Description</span>
+      <input
+        formControlName="description"
+        placeholder="Uber to airport"
+        autocomplete="off"
+        (blur)="descriptionDone()"
+      />
+      @if (showError('description')) {
+        <small class="field-error">Please describe the expense.</small>
+      }
+    </label>
+
+    <label class="field">
+      <span>Amount</span>
+      <input
+        formControlName="amount"
+        type="number"
+        inputmode="decimal"
+        step="0.01"
+        min="0.01"
+        placeholder="32.50"
+      />
+      @if (showError('amount')) {
+        <small class="field-error">
+          {{
+            form.controls.amount.hasError('positive')
+              ? 'The amount must be greater than zero.'
+              : 'Please enter an amount, for example 12.50.'
+          }}
+        </small>
+      }
+    </label>
+
+    <div class="field">
+      <div class="label-row">
+        <label for="category">Category</label>
+        @if (form.controls.description.value.trim() && ai() !== 'asking') {
+          <button type="button" class="link suggest" (click)="suggest()">
+            🤖 {{ ai() === 'suggested' ? 'Suggest again' : 'Suggest' }}
+          </button>
+        }
+      </div>
+      <input
+        id="category"
+        formControlName="category"
+        list="categories"
+        placeholder="food"
+        autocomplete="off"
+      />
+      <datalist id="categories">
+        @for (category of categories; track category) {
+          <option [value]="category"></option>
+        }
+      </datalist>
+      <!-- polite: screen readers announce the AI's answer once it arrives -->
+      <small class="hint" aria-live="polite">
+        @switch (ai()) {
+          @case ('asking') {
+            🤖 Asking Gemini… you can keep typing.
+          }
+          @case ('suggested') {
+            🤖 Suggested by AI. Change it if it's wrong.
+          }
+          @case ('failed') {
+            <span class="ai-failed">No AI suggestion: {{ aiError() }} Please pick a category.</span>
+          }
+          @default {
+            Pick one or type your own. Leave it empty and AI suggests one.
+          }
+        }
       </small>
-    }
-  </label>
-
-  <div class="field">
-    <div class="label-row">
-      <label for="category">Category</label>
-      @if (form.controls.description.value.trim() && ai() !== 'asking') {
-        <button type="button" class="link suggest" (click)="suggest()">
-          🤖 {{ ai() === 'suggested' ? 'Suggest again' : 'Suggest' }}
-        </button>
+      @if (showError('category')) {
+        <small class="field-error">Please choose or type a category.</small>
       }
     </div>
-    <input
-      id="category"
-      formControlName="category"
-      list="categories"
-      placeholder="food"
-      autocomplete="off"
-    />
-    <datalist id="categories">
-      @for (category of categories; track category) {
-        <option [value]="category"></option>
-      }
-    </datalist>
-    <!-- polite: screen readers announce the AI's answer once it arrives -->
-    <small class="hint" aria-live="polite">
-      @switch (ai()) {
-        @case ('asking') {
-          🤖 Asking Gemini… you can keep typing.
-        }
-        @case ('suggested') {
-          🤖 Suggested by AI. Change it if it's wrong.
-        }
-        @case ('failed') {
-          <span class="ai-failed">No AI suggestion: {{ aiError() }} Please pick a category.</span>
-        }
-        @default {
-          Pick one or type your own. Leave it empty and AI suggests one.
-        }
-      }
-    </small>
-    @if (showError('category')) {
-      <small class="field-error">Please choose or type a category.</small>
-    }
-  </div>
 
-  <label class="field">
-    <span>Date</span>
-    <input formControlName="date" type="date" />
-    @if (showError('date')) {
-      <small class="field-error">Please choose a date.</small>
-    }
-  </label>
-
-  <label class="field">
-    <span>Repeats</span>
-    <select formControlName="frequency">
-      <option value="">No</option>
-      @for (frequency of frequencies; track frequency) {
-        <option [value]="frequency">{{ frequency }}</option>
+    <label class="field">
+      <span>Date</span>
+      <input formControlName="date" type="date" />
+      @if (showError('date')) {
+        <small class="field-error">Please choose a date.</small>
       }
-    </select>
-  </label>
+    </label>
 
-  <div class="buttons">
-    <button type="submit" class="primary" [disabled]="saving()">
-      {{ saving() ? 'Saving…' : 'Save' }}
-    </button>
-  </div>
-</form>
+    <label class="field">
+      <span>Repeats</span>
+      <select formControlName="frequency">
+        <option value="">No</option>
+        @for (frequency of frequencies; track frequency) {
+          <option [value]="frequency">{{ frequency }}</option>
+        }
+      </select>
+    </label>
+
+    <div class="buttons">
+      <button type="submit" class="primary" [disabled]="saving()">
+        {{ saving() ? 'Saving…' : editing() ? 'Save changes' : 'Save' }}
+      </button>
+      @if (editing()) {
+        <a routerLink="/expenses">Cancel</a>
+      }
+    </div>
+  </form>
+}

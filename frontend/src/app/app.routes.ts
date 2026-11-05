@@ -28,6 +28,8 @@ export const routes: Routes = [
     children: [
       { path: 'expenses', component: ExpenseList, title: 'Expenses' },
       { path: 'expenses/new', component: ExpenseForm, title: 'Add expense' },
+      // The same form; ":id" reaches the component as its id input and switches it to editing.
+      { path: 'expenses/:id/edit', component: ExpenseForm, title: 'Edit expense' },
       { path: 'summary', component: Summary, title: 'Summary' },
     ],
   },
