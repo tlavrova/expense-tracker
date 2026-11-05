@@ -69,14 +69,17 @@ describe('BudgetsPage', () => {
     expect(fake.month).toHaveBeenCalledWith('2026-11');
     expect(page().querySelector('.month strong')?.textContent).toBe('November 2026');
     expect(rows().slice(0, 2)).toEqual([
-      ['food', '257.50', '300.00', '42.50 left', 'Change Remove'],
-      ['shopping', '120.00', '100.00', 'over by 20.00', 'Change Remove'],
+      ['food', '257.50 of 300.00', '300.00', '42.50 left', 'Change Remove'],
+      ['shopping', '120.00 of 100.00', '100.00', 'over by 20.00', 'Change Remove'],
     ]);
     expect(page().querySelectorAll('tr.over').length).toBe(1);
     const footer = [...page().querySelectorAll('tfoot th, tfoot td')].map((cell) =>
       cell.textContent?.trim(),
     );
-    expect(footer.slice(0, 3)).toEqual(['Total', '410.00', '400.00']);
+    expect(footer.slice(0, 3)).toEqual(['Total', '377.50 of 400.00', '400.00']); // budgeted only
+    expect(page().querySelector('.all-spending')?.textContent?.replace(/\s+/g, ' ').trim()).toBe(
+      'All spending this month: 410.00', // with transport, which has no budget
+    );
   });
 
   it('lists spending without a budget, with "Set budget"', async () => {
