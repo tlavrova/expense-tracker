@@ -57,3 +57,14 @@
   align-items: center;
   gap: 1rem;
 }
+
+.budget-hint {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.budget-hint.over {
+  color: var(--danger);
+  font-weight: 600;
+}
