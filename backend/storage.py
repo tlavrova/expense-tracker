@@ -19,7 +19,8 @@ from sqlalchemy import Engine, and_, extract
 from sqlmodel import Session, col, select
 
 import database
-from database import ExpenseRow, StorageError
+from database import StorageError
+from tables import ExpenseRow
 from models import Expense, ExpenseTracker, RecurringExpense
 
 __all__ = [

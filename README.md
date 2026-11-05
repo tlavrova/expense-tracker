@@ -90,7 +90,7 @@ or delete it). This only happens while the database is still empty, so nothing i
 
 The tables are created and updated by Alembic migrations (`backend/migrations/`). They run by
 themselves when the app starts, so an older `expenses.db` is upgraded automatically; its
-expenses stay the command-line app's own. After changing a table class in `database.py`, draft
+expenses stay the command-line app's own. After changing a table class in `tables.py`, draft
 the next migration with `cd backend && alembic revision --autogenerate -m "what changed"`.
 
 ## Login (website)
@@ -255,7 +255,8 @@ expense-tracker/
 │   ├── prompts.py       # ask_text, ask_amount, ask_date, ask_month, ask_frequency
 │   ├── decorators.py    # @log_action
 │   ├── models.py        # Expense, RecurringExpense, ExpenseTracker
-│   ├── database.py      # database connection (DATABASE_URL, SQL_ECHO), table classes, migrations
+│   ├── database.py      # database connection (DATABASE_URL, SQL_ECHO), migrations, sessions
+│   ├── tables.py        # the table classes: UserRow, ExpenseRow, BudgetRow
 │   ├── storage.py       # expense queries for one owner (the CLI, or one account): list, get, add, change, delete
 │   ├── reports.py       # totals for one owner, added up by the database: per category, per month
 │   ├── budgets.py       # one account's monthly budgets: list, set, delete

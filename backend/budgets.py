@@ -11,7 +11,7 @@ from sqlalchemy import Engine
 from sqlmodel import select
 
 import database
-from database import BudgetRow
+from tables import BudgetRow
 from models import validate_amount
 
 

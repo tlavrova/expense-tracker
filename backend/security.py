@@ -22,7 +22,7 @@ from fastapi.security import OAuth2PasswordBearer
 from pwdlib import PasswordHash
 
 import users
-from database import UserRow
+from tables import UserRow
 
 ALGORITHM = "HS256"
 TOKEN_LIFETIME = timedelta(days=7)  # then the user logs in again

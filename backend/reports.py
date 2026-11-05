@@ -10,7 +10,7 @@ from sqlalchemy import Engine, extract
 from sqlmodel import func, select
 
 import database
-from database import ExpenseRow
+from tables import ExpenseRow
 from storage import Owner, in_month, owned_by
 
 

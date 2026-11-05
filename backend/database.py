@@ -1,4 +1,4 @@
-"""The database connection and its tables (SQLModel).
+"""The database connection: which database, connecting once, migrations, and sessions.
 
 Which database comes from the DATABASE_URL environment variable:
   not set                          SQLite file expenses.db next to this file (on your Mac)
@@ -6,8 +6,8 @@ Which database comes from the DATABASE_URL environment variable:
 
 SQL_ECHO=1 prints every SQL statement SQLModel sends, to see what the query builder produces.
 
-Only the connection and the table classes live here; the queries are in storage.py (expenses),
-reports.py (totals), users.py (accounts) and budgets.py (budgets).
+The table classes are in tables.py; the queries are in storage.py (expenses), reports.py
+(totals), users.py (accounts) and budgets.py (budgets).
 
 The tables are created and changed by Alembic migrations (migrations/versions/), which run by
 themselves when the app connects, so an older expenses.db is upgraded on its first start.
@@ -18,16 +18,14 @@ from __future__ import annotations
 import functools
 import os
 from contextlib import contextmanager
-from datetime import date as Date
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterator
 
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import Connection, Engine, UniqueConstraint, inspect
+from sqlalchemy import Connection, Engine, inspect
 from sqlalchemy.exc import SQLAlchemyError
-from sqlmodel import Field, Session, SQLModel, create_engine
+from sqlmodel import Session, create_engine
 
 DEFAULT_DB_PATH = Path(__file__).parent / "expenses.db"
 MIGRATIONS_DIR = Path(__file__).parent / "migrations"
@@ -37,46 +35,6 @@ FIRST_REVISION = "0001"
 
 class StorageError(Exception):
     """Raised when the database can't be read or written, or holds invalid data."""
-
-
-class UserRow(SQLModel, table=True):
-    """One account in the "users" table. Only a hash of the password is stored, never the password."""
-
-    __tablename__ = "users"
-
-    id: int | None = Field(default=None, primary_key=True)
-    email: str = Field(unique=True, index=True)  # stored lowercase
-    password_hash: str
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-
-
-class ExpenseRow(SQLModel, table=True):
-    """One expense in the "expenses" table. frequency is empty for one-off expenses.
-
-    user_id is the account it belongs to (website); empty for the command-line app's own expenses.
-    """
-
-    __tablename__ = "expenses"
-
-    id: int | None = Field(default=None, primary_key=True)
-    amount: float
-    category: str = Field(index=True)
-    description: str
-    date: Date = Field(index=True)
-    frequency: str | None = None
-    user_id: int | None = Field(default=None, foreign_key="users.id", index=True)
-
-
-class BudgetRow(SQLModel, table=True):
-    """One account's monthly budget for one category in the "budgets" table (the same every month)."""
-
-    __tablename__ = "budgets"
-    __table_args__ = (UniqueConstraint("user_id", "category", name="uq_budgets_user_id_category"),)
-
-    id: int | None = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="users.id", index=True)
-    category: str  # stored lowercase, like the expenses' categories
-    amount: float
 
 
 def database_url() -> str:
