@@ -2,20 +2,36 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { Subject, of, throwError } from 'rxjs';
-import { ExpenseService } from '../expense.service';
+import { MonthReport } from '../../budgets/budget.model';
+import { BudgetService } from '../../budgets/budget.service';
 import { today } from '../../core/dates';
+import { ExpenseService } from '../expense.service';
 import { ExpenseForm } from './expense-form';
+
+/** No budgets, unless a test says otherwise. */
+const NO_BUDGETS = (month: string): MonthReport => ({
+  month,
+  rows: [],
+  totalSpent: 0,
+  totalBudget: 0,
+});
 
 async function render(
   add: ExpenseService['add'],
   suggestCategory: ExpenseService['suggestCategory'] = vi.fn(),
   /** The edit page: the id from the address, and the fake get/update. */
   edit?: { id: string } & Partial<Pick<ExpenseService, 'get' | 'update'>>,
+  /** The month report the budget hint loads. */
+  month: BudgetService['month'] = (month) => of(NO_BUDGETS(month)),
 ) {
   const service = { add, suggestCategory, get: edit?.get, update: edit?.update };
   await TestBed.configureTestingModule({
     imports: [ExpenseForm],
-    providers: [provideRouter([]), { provide: ExpenseService, useValue: service }],
+    providers: [
+      provideRouter([]),
+      { provide: ExpenseService, useValue: service },
+      { provide: BudgetService, useValue: { month } },
+    ],
   }).compileComponents();
   const fixture = TestBed.createComponent(ExpenseForm);
   if (edit) {
@@ -326,5 +342,107 @@ describe('ExpenseForm: AI category suggestion', () => {
     await fixture.whenStable();
     expect(suggest).toHaveBeenCalledTimes(2);
     expect(value('category')).toBe('food');
+  });
+});
+
+describe('ExpenseForm: budget hint', () => {
+  /** November: food has spent 200 of 250; transport has no budget. */
+  const month = vi.fn((month: string) =>
+    of({
+      month,
+      rows:
+        month === '2026-11'
+          ? [
+              { category: 'food', spent: 200, budget: 250 },
+              { category: 'transport', spent: 30, budget: null },
+            ]
+          : [{ category: 'food', spent: 0, budget: 250 }],
+      totalSpent: 230,
+      totalBudget: 250,
+    }),
+  );
+  const hintText = (page: HTMLElement) =>
+    page.querySelector('.budget-hint')?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
+
+  beforeEach(() => month.mockClear());
+
+  it('shows how much of the budget is left with this expense', async () => {
+    const { type, page, fixture } = await render(vi.fn(), vi.fn(), undefined, month);
+    type('date', '2026-11-04');
+    type('category', 'Food');
+    type('amount', '30');
+    await fixture.whenStable();
+    expect(hintText(page)).toBe('food: 230.00 of 250.00 this month with this expense — 20.00 left');
+    expect(page.querySelector('.budget-hint.over')).toBeNull();
+  });
+
+  it('warns in red when the expense goes over the budget', async () => {
+    const { type, page, fixture } = await render(vi.fn(), vi.fn(), undefined, month);
+    type('date', '2026-11-04');
+    type('category', 'food');
+    type('amount', '62.5');
+    await fixture.whenStable();
+    expect(hintText(page)).toBe(
+      'food: 262.50 of 250.00 this month with this expense — over by 12.50',
+    );
+    expect(page.querySelector('.budget-hint.over')).not.toBeNull();
+  });
+
+  it('says nothing for a category without a budget, or without an amount', async () => {
+    const { type, page, fixture } = await render(vi.fn(), vi.fn(), undefined, month);
+    type('date', '2026-11-04');
+    type('category', 'transport');
+    type('amount', '10');
+    await fixture.whenStable();
+    expect(page.querySelector('.budget-hint')).toBeNull();
+    type('category', 'food');
+    type('amount', '');
+    await fixture.whenStable();
+    expect(page.querySelector('.budget-hint')).toBeNull();
+  });
+
+  it("uses the expense's own month, and loads each month once", async () => {
+    const { type, page, fixture } = await render(vi.fn(), vi.fn(), undefined, month);
+    type('category', 'food');
+    type('amount', '30');
+    type('date', '2026-10-15');
+    await fixture.whenStable();
+    expect(hintText(page)).toContain('30.00 of 250.00'); // October: nothing spent yet
+    type('date', '2026-11-04');
+    type('date', '2026-11-20');
+    type('date', '2026-10-01');
+    await fixture.whenStable();
+    const loaded = month.mock.calls.map(([m]) => m);
+    expect(new Set(loaded).size).toBe(loaded.length); // no month twice
+    expect(loaded).toEqual(expect.arrayContaining(['2026-10', '2026-11']));
+  });
+
+  it("doesn't count the edited expense twice", async () => {
+    const lunch = { id: 7, amount: 50, category: 'food', description: 'Lunch', date: '2026-11-02' };
+    const { type, page, fixture } = await render(
+      vi.fn(),
+      vi.fn(),
+      { id: '7', get: () => of(lunch) },
+      month,
+    );
+    await fixture.whenStable();
+    // November's 200 already include this lunch's 50: with 60 instead it's 210, not 260.
+    type('amount', '60');
+    await fixture.whenStable();
+    expect(hintText(page)).toBe('food: 210.00 of 250.00 this month with this expense — 40.00 left');
+  });
+
+  it('never blocks saving, even over budget', async () => {
+    const add = vi.fn(() =>
+      of({ id: 1, amount: 500, category: 'food', description: 'Party', date: '2026-11-04' }),
+    );
+    const { type, submit, navigate } = await render(add, vi.fn(), undefined, month);
+    type('description', 'Party');
+    type('date', '2026-11-04');
+    type('category', 'food');
+    type('amount', '500');
+    await submit();
+    expect(add).toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith(['/expenses']);
   });
 });

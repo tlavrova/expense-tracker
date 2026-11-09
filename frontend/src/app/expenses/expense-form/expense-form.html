@@ -97,6 +97,20 @@
       }
     </label>
 
+    @let budget = budgetHint.line();
+    @if (budget) {
+      <!-- polite: screen readers hear the hint when it appears or changes -->
+      <p class="budget-hint" [class.over]="budget.left < 0" aria-live="polite">
+        {{ budget.category }}: {{ budget.total | number: '1.2-2' }} of
+        {{ budget.budget | number: '1.2-2' }} this month with this expense —
+        @if (budget.left < 0) {
+          over by {{ -budget.left | number: '1.2-2' }}
+        } @else {
+          {{ budget.left | number: '1.2-2' }} left
+        }
+      </p>
+    }
+
     <label class="field">
       <span>Repeats</span>
       <select formControlName="frequency">
