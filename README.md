@@ -244,74 +244,26 @@ exist. Errors always look like `{"detail": "a readable message"}` (`422` for inv
 
 ## Structure
 
+One line per folder; each file starts with a comment (docstring) saying what it does.
+
 ```
 expense-tracker/
-├── .github/workflows/
-│   ├── tests.yml                # runs both test suites on every pull request
-│   └── deploy-frontend.yml      # publishes the Angular app to GitHub Pages
-├── backend/
-│   ├── main.py          # CLI start: logging, load data, menu loop
-│   ├── screens.py       # one function per menu option
-│   ├── prompts.py       # ask_text, ask_amount, ask_date, ask_month, ask_frequency
-│   ├── decorators.py    # @log_action
-│   ├── models.py        # Expense, RecurringExpense, ExpenseTracker
-│   ├── database.py      # database connection (DATABASE_URL, SQL_ECHO), migrations, sessions
-│   ├── tables.py        # the table classes: UserRow, ExpenseRow, BudgetRow
-│   ├── storage.py       # expense queries for one owner (the CLI, or one account): list, get, add, change, delete
-│   ├── reports.py       # totals for one owner, added up by the database: per category, per month
-│   ├── budgets.py       # one account's monthly budgets: list, set, delete
-│   ├── users.py         # accounts: create, find by email or id
-│   ├── security.py      # password hashing, login tokens (JWT_SECRET), the logged-in user
-│   ├── rate_limit.py    # "at most N times in M minutes", for login and sign-up attempts
-│   ├── limits.py        # the visitor's address (CLIENT_IP_HEADER) and the 429 answer, for the routers
-│   ├── alembic.ini      # Alembic settings (database migrations)
-│   ├── migrations/      # migration scripts: 0001 expenses table, 0002 users + expenses.user_id, 0003 budgets
-│   ├── json_import.py   # one-time move of the old expenses.json into the database
-│   ├── ai_helper.py     # AI category suggestion (Gemini)
-│   ├── api.py           # FastAPI app: CORS, error format, includes the routers
-│   ├── schemas.py       # the API's JSON shapes (Pydantic)
-│   ├── routers/
-│   │   ├── auth.py      # /auth/signup, /auth/login, /auth/me
-│   │   ├── expenses.py  # /expenses (login required)
-│   │   ├── reports.py   # /summary, /reports/month (login required)
-│   │   ├── budgets.py   # /budgets (login required)
-│   │   ├── params.py    # parse_month(): ?month=YYYY-MM, the same for every router
-│   │   └── ai.py        # /suggest-category (login required)
-│   ├── expenses.db      # local SQLite data (git-ignored; created on first start)
-│   ├── expenses.log     # action log from @log_action (git-ignored)
-│   ├── tests/           # pytest: one temporary database per test, Gemini never called
-│   ├── pytest.ini       # where the tests are
-│   ├── requirements.txt # google-genai, fastapi, uvicorn, sqlmodel, alembic, pwdlib, PyJWT, psycopg, …
-│   └── requirements-dev.txt # + pytest and httpx2, for the tests
-├── frontend/            # Angular 22 app
-│   └── src/
-│       ├── environments/environment.ts  # apiUrl: where the API runs (environment.prod.ts online)
-│       ├── styles.css                   # colors, form fields, buttons and tables shared by all pages
-│       └── app/
-│           ├── app.ts / app.html   # layout: header + navigation
-│           ├── app.routes.ts       # /login, /signup; /expenses, /expenses/new, /expenses/:id/edit, /summary, /budgets, /password need a login
-│           ├── auth/
-│           │   ├── auth.service.ts # who is logged in; log in, sign up, log out
-│           │   ├── token.ts        # keeping the token between visits (localStorage), reading its expiry
-│           │   ├── auth.guards.ts  # logged out → login page (and back afterwards); logged in → past it
-│           │   ├── auth-page/      # the login and sign-up page (one form, two modes)
-│           │   └── password-page/  # change the password (the email in the header links here)
-│           ├── budgets/
-│           │   ├── budget.model.ts   # Budget, MonthRow, MonthReport
-│           │   ├── budget.service.ts # /budgets and /reports/month
-│           │   └── budgets-page/     # one month: spent vs budget per category, set/change/remove in place
-│           ├── core/
-│           │   ├── api-error.ts        # turns a failed API call into a sentence for the page
-│           │   ├── dates.ts            # today(), thisMonth(), isMonth(), shiftMonth(): YYYY-MM-DD and YYYY-MM in local time
-│           │   └── auth.interceptor.ts # adds the token to API calls only; a 401 logs out
-│           └── expenses/
-│               ├── expense.model.ts    # Expense, NewExpense, Summary, filters; CATEGORIES, FREQUENCIES
-│               ├── expense.service.ts  # the only data source: HttpClient calls to the API
-│               ├── expense-list/       # list with filters (kept in the address), total, edit and delete
-│               ├── expense-filter-bar/ # category, month and sort fields above the list
-│               ├── expense-form/       # add and edit form with validation; category-suggestion.ts asks the AI
-│               └── summary/            # totals per category with their share
-└── README.md
+├── .github/workflows/ # tests on every pull request; publishing the website to GitHub Pages
+├── backend/           # Python: the command-line app and the FastAPI backend
+│   ├── *.py           # CLI (main, screens, prompts), rules (models), data (database, tables,
+│   │                  # storage, reports, budgets, users), login (security, limits, rate_limit),
+│   │                  # AI (ai_helper), the API app (api, schemas)
+│   ├── routers/       # the API endpoints, one file per area: auth, expenses, reports, budgets, ai
+│   ├── migrations/    # Alembic migration scripts, one per database change (0001, 0002, …)
+│   └── tests/         # pytest: one temporary database per test, Gemini never called
+└── frontend/src/      # Angular 22
+    ├── environments/  # where the API is: environment.ts (npm start), environment.prod.ts (website)
+    ├── styles.css     # shared colors, form fields, buttons, tables and bars
+    └── app/           # app.ts (header and navigation), app.routes.ts (the pages)
+        ├── auth/      # login and sign-up, change password, the token, route guards
+        ├── budgets/   # the Budgets page and its service
+        ├── core/      # shared helpers: API error messages, dates, the token interceptor
+        └── expenses/  # list and filter bar, add/edit form (AI suggestion), summary
 ```
 
 ## Later
